@@ -19,11 +19,11 @@
 /**
  * IKEA Obegränsad
  */
-// #define PIN_CS 1   // CLA
-// #define PIN_SCLK 2 // CLK
-// #define PIN_MOSI 3 // DI
-// #define PIN_OE 4   // EN
-// #define PIN_SW2 5  // SW
+// #define PIN_SW2 D3  // 4: SW
+#define PIN_OE D4   // 5: EN
+#define PIN_CS SCL   // 6 (D5): CLA
+#define PIN_SCLK SCK // 7 (D6): CLK
+#define PIN_MOSI MOSI // 9 (D8): DI
 
 /**
  * Wi-Fi credentials
