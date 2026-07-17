@@ -1,27 +1,30 @@
-import { mdiSnake } from "@mdi/js";
+import { mdiCheckboxBlankCircleOutline, mdiCheckboxMarkedCircleOutline, mdiSnake } from "@mdi/js";
 import { type Component, createSignal } from "solid-js";
 
-import { ClockIcon } from "../components/Clock";
-import { Toast } from "../components/Toast";
+import { ClockIcon, ClockText } from "../components/Clock";
+import { Icon } from "../components/Icon";
 import { SidebarSection } from "../extensions/WebApp";
 import { WebSocketWS } from "../extensions/WebSocket";
 import { MainComponent as ModesMainComponent } from "../services/Modes";
 
 export const name = "Snake";
 
-const [getClock, setClock] = createSignal<boolean>(true);
+const [getClock, setClock] = createSignal<boolean>(false);
 
 export const receiver = (json: { clock?: boolean }) => {
     json?.clock !== undefined && setClock(json.clock);
 };
 
-const { toast } = Toast();
-
-export const Main: Component = () => <ModesMainComponent icon={getClock() ? ClockIcon() : mdiSnake} />;
+export const Main: Component = () => (
+    <ModesMainComponent
+        icon={mdiSnake}
+        text={getClock() ? ClockText() : undefined}
+    />
+);
 
 export const Sidebar: Component = () => {
-    const handleClock = (clock: boolean) => {
-        setClock(clock);
+    const handleClock = () => {
+        setClock(!getClock());
         WebSocketWS.send(
             JSON.stringify({
                 [name]: {
@@ -29,20 +32,21 @@ export const Sidebar: Component = () => {
                 },
             }),
         );
-        toast(`${name} updated`);
     };
 
     return (
-        <SidebarSection title={name}>
-            <label class="flex items-center gap-3 cursor-pointer">
-                <input
-                    type="checkbox"
-                    checked={getClock()}
-                    onChange={(e) => handleClock(e.currentTarget.checked)}
-                    class="cursor-pointer w-5 h-5"
-                />
-                <span>Clock</span>
-            </label>
+        <SidebarSection>
+            <div class="action grid-cols-[--spacing(4)_1fr_--spacing(12)]">
+                <Icon path={ClockIcon()} />
+                Clock
+                <button
+                    class={`w-full ${getClock() ? "action-negative" : "action-deactivated"}`}
+                    onclick={handleClock}
+                    type="button"
+                >
+                    <Icon path={getClock() ? mdiCheckboxMarkedCircleOutline : mdiCheckboxBlankCircleOutline} />
+                </button>
+            </div>
         </SidebarSection>
     );
 };

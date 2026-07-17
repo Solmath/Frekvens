@@ -7,12 +7,14 @@
 class LinesMode final : public ModeModule
 {
 private:
-    uint8_t x = 0;
+    uint8_t x{0U};
 
-    unsigned long lastMillis = 0;
+    unsigned long lastMillis{0UL};
 
 public:
-    explicit LinesMode() : ModeModule("Lines") {};
+    static constexpr std::string_view name{"Lines"};
+
+    explicit LinesMode() : ModeModule(name) {};
 
     void handle() override;
 };

@@ -2,32 +2,120 @@
 
 #include "modes/HomeThermometerMode.h"
 
-#include "config/constants.h"                  // NOLINT(misc-include-cleaner)
-#include "extensions/HomeAssistantExtension.h" // NOLINT(misc-include-cleaner)
-#include "fonts/MiniFont.h"                    // NOLINT(misc-include-cleaner)
+#include "config/constants.h" // NOLINT(misc-include-cleaner)
+#include "fonts/MiniFont.h"   // NOLINT(misc-include-cleaner)
 #include "handlers/TextHandler.h"
 #include "services/DeviceService.h"
 #include "services/DisplayService.h"
+#include "services/ExtensionsService.h" // NOLINT(misc-include-cleaner)
 
-#include <Preferences.h>
 #include <nvs.h>
-#include <regex>
 
 void HomeThermometerMode::configure()
 {
-#if EXTENSION_HOMEASSISTANT
-    const std::string topic{std::string("frekvens/" HOSTNAME "/").append(name)};
+    nvs_handle_t handle{};
+    if (nvs_open(std::string(name).c_str(), nvs_open_mode_t::NVS_READONLY, &handle) == ESP_OK)
     {
-        for (const char *const where : {
-                 "indoor",
-                 "outdoor",
+        nvs_get_i16(handle, "indoor", &indoor);
+        nvs_get_i16(handle, "outdoor", &outdoor);
+        nvs_close(handle);
+    }
+    transmit();
+}
+
+void HomeThermometerMode::begin() { pending = true; }
+
+void HomeThermometerMode::handle()
+{
+    if (pending && (indoor != 0 || outdoor != 0))
+    {
+        draw();
+    }
+}
+
+void HomeThermometerMode::draw()
+{
+    pending = false;
+    const MiniFont font;
+    const TextHandler textIndoor{std::to_string(indoor).append("°"), font};
+    const TextHandler textOutdoor{std::to_string(outdoor).append("°"), font};
+    const uint8_t height{textOutdoor.getHeight()};
+    const uint8_t marginsY = (GRID_ROWS - (height * 2)) / 3;
+    Display.clearFrame();
+    textIndoor.draw(static_cast<int16_t>((GRID_COLUMNS - textIndoor.getWidth()) / 2), static_cast<int8_t>(marginsY));
+    textOutdoor.draw(static_cast<int16_t>((GRID_COLUMNS - textOutdoor.getWidth()) / 2), GRID_ROWS - marginsY - height);
+}
+
+void HomeThermometerMode::transmit()
+{
+    if (indoor != 0 || outdoor != 0)
+    {
+        JsonDocument doc; // NOLINT(misc-const-correctness)
+        doc["indoor"].set(indoor);
+        doc["outdoor"].set(outdoor);
+        Device.transmit(doc.as<JsonObjectConst>(), name);
+    }
+}
+
+void HomeThermometerMode::onReceive(JsonObjectConst payload,
+                                    std::string_view source) // NOLINT(misc-unused-parameters)
+{
+    if (payload["indoor"].is<int16_t>()) // NOLINT(bugprone-branch-clone)
+    {
+        setTemperature("indoor", payload["indoor"].as<int16_t>());
+    }
+    else if (payload["indoor"].is<float>())
+    {
+        setTemperature("indoor", lroundf(payload["indoor"].as<float>()));
+    }
+    if (payload["outdoor"].is<int16_t>()) // NOLINT(bugprone-branch-clone)
+    {
+        setTemperature("outdoor", payload["outdoor"].as<int16_t>());
+    }
+    else if (payload["outdoor"].is<float>())
+    {
+        setTemperature("outdoor", lroundf(payload["outdoor"].as<float>()));
+    }
+}
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+void HomeThermometerMode::setTemperature(std::string_view where, int16_t temperature)
+{
+    if (where == "indoor")
+    {
+        indoor = temperature;
+    }
+    else if (where == "outdoor")
+    {
+        outdoor = temperature;
+    }
+    nvs_handle_t handle{};
+    if (nvs_open(name.data(), nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
+    {
+        nvs_set_i16(handle, "indoor", indoor);
+        nvs_set_i16(handle, "outdoor", outdoor);
+        nvs_commit(handle);
+        nvs_close(handle);
+    }
+    pending = true;
+    transmit();
+}
+
+#if EXTENSION_HOMEASSISTANT
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+void HomeThermometerMode::onHomeAssistant(JsonDocument &discovery, std::string topic, std::string unique)
+{
+    topic.append(name);
+    {
+        for (const auto &where : {
+                 std::pair<const char *, const char *>{"indoor", "Indoor"},
+                 std::pair<const char *, const char *>{"outdoor", "Outdoor"},
              })
         {
-            const std::string id{std::regex_replace(name, std::regex(R"(\s+)"), "").append("_").append(where)};
-            JsonObject component{
-                (*HomeAssistant->discovery)[HomeAssistantAbbreviations::components][id].to<JsonObject>()};
+            const std::string id{std::string("Homethermometer_").append(where.first)};
+            JsonObject component{discovery[HomeAssistantAbbreviations::components][id].to<JsonObject>()};
             component[HomeAssistantAbbreviations::command_template].set(
-                std::string(R"({")").append(where).append(R"(":{{value}}})"));
+                std::string(R"({")").append(where.first).append(R"(":{{value}}})"));
             component[HomeAssistantAbbreviations::command_topic].set(topic + "/set");
             component[HomeAssistantAbbreviations::device_class].set("temperature");
             component[HomeAssistantAbbreviations::entity_category].set("config");
@@ -46,109 +134,18 @@ void HomeThermometerMode::configure()
             component[HomeAssistantAbbreviations::min].set(INT16_MIN);
 #endif // GRID_COLUMNS < 18
             component[HomeAssistantAbbreviations::mode].set("box");
-            component[HomeAssistantAbbreviations::name].set((char)std::toupper(*where) + std::string(where + 1));
-            component[HomeAssistantAbbreviations::object_id].set(HOSTNAME "_" + id);
+            component[HomeAssistantAbbreviations::name].set(where.second);
             component[HomeAssistantAbbreviations::platform].set("number");
             component[HomeAssistantAbbreviations::state_topic].set(topic);
-            component[HomeAssistantAbbreviations::unique_id].set(HomeAssistant->uniquePrefix + id);
-#if TEMPERATURE_KELVIN
-            component[HomeAssistantAbbreviations::unit_of_measurement].set("°K");
-#elif TEMPERATURE_CELSIUS
-            component[HomeAssistantAbbreviations::unit_of_measurement].set("°C");
-#elif TEMPERATURE_FAHRENHEIT
-            component[HomeAssistantAbbreviations::unit_of_measurement].set("°F");
-#endif // TEMPERATURE_KELVIN
+            component[HomeAssistantAbbreviations::unique_id].set(unique + id);
+#ifdef TEMPERATURE_UNIT
+            component[HomeAssistantAbbreviations::unit_of_measurement].set(TEMPERATURE_UNIT);
+#endif // TEMPERATURE_UNIT
             component[HomeAssistantAbbreviations::value_template].set(
-                std::string("{{value_json.").append(where).append("}}"));
+                std::string("{{value_json.").append(where.first).append("}}"));
         }
     }
+}
 #endif // EXTENSION_HOMEASSISTANT
-    transmit();
-}
-
-void HomeThermometerMode::begin() { pending = true; }
-
-void HomeThermometerMode::handle()
-{
-    if (pending)
-    {
-        update();
-    }
-}
-
-void HomeThermometerMode::update()
-{
-    pending = false;
-
-    Preferences Storage;
-    Storage.begin(std::string(name).substr(0, NVS_KEY_NAME_MAX_SIZE - 1).c_str(), true);
-    if (!Storage.isKey("indoor") || !Storage.isKey("outdoor"))
-    {
-        Storage.end();
-        return;
-    }
-    const int16_t indoor = Storage.getShort("indoor");
-    const int16_t outdoor = Storage.getShort("outdoor");
-    Storage.end();
-    TextHandler _indoor = TextHandler(std::to_string(indoor).append("°"), FontMini);
-    TextHandler _outdoor = TextHandler(std::to_string(outdoor).append("°"), FontMini);
-    const uint8_t _height = _outdoor.getHeight();
-    const uint8_t marginsY = (GRID_ROWS - _indoor.getHeight() - _height) / 3;
-    Display.clearFrame();
-    _indoor.draw((GRID_COLUMNS - _indoor.getWidth()) / 2, marginsY);
-    _outdoor.draw((GRID_COLUMNS - _outdoor.getWidth()) / 2, GRID_ROWS - marginsY - _height);
-}
-
-void HomeThermometerMode::transmit()
-{
-    JsonDocument doc; // NOLINT(misc-const-correctness)
-    Preferences Storage;
-    Storage.begin(std::string(name).substr(0, NVS_KEY_NAME_MAX_SIZE - 1).c_str(), true);
-    if (Storage.isKey("indoor"))
-    {
-        doc["indoor"].set(Storage.getShort("indoor"));
-    }
-    if (Storage.isKey("outdoor"))
-    {
-        doc["outdoor"].set(Storage.getShort("outdoor"));
-    }
-    Storage.end();
-    if (doc.size() != 0)
-    {
-        Device.transmit(doc.as<JsonObjectConst>(), name);
-    }
-}
-
-void HomeThermometerMode::onReceive(JsonObjectConst payload,
-                                    const char *source) // NOLINT(misc-unused-parameters)
-{
-    if (payload["indoor"].is<float>())
-    {
-        setTemperature("indoor", round(payload["indoor"].as<float>()));
-    }
-    if (payload["outdoor"].is<float>())
-    {
-        setTemperature("outdoor", round(payload["outdoor"].as<float>()));
-    }
-}
-
-void HomeThermometerMode::setTemperature(const char *where, int16_t temperature)
-{
-    Preferences Storage;
-    Storage.begin(std::string(name).substr(0, NVS_KEY_NAME_MAX_SIZE - 1).c_str());
-    Storage.putShort(where, temperature);
-    Storage.end();
-    pending = true;
-    transmit();
-#if TEMPERATURE_KELVIN
-    ESP_LOGD(name, "%s %d°K", where, temperature); // NOLINT(cppcoreguidelines-avoid-do-while)
-#elif TEMPERATURE_CELSIUS
-    ESP_LOGD(name, "%s %d°C", where, temperature); // NOLINT(cppcoreguidelines-avoid-do-while)
-#elif TEMPERATURE_FAHRENHEIT
-    ESP_LOGD(name, "%s %d°F", where, temperature); // NOLINT(cppcoreguidelines-avoid-do-while)
-#else
-    ESP_LOGD(name, "%s %d°", where, temperature); // NOLINT(cppcoreguidelines-avoid-do-while)
-#endif // TEMPERATURE_KELVIN
-}
 
 #endif // MODE_HOMETHERMOMETER

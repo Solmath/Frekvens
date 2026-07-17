@@ -2,42 +2,65 @@
 
 #if MODE_CLOCK
 
-#include "modules/FontModule.h"
+#include "config/constants.h"     // NOLINT(misc-include-cleaner)
+#include "fonts/MediumBoldFont.h" // NOLINT(misc-include-cleaner)
+#include "fonts/MediumFont.h"     // NOLINT(misc-include-cleaner)
+#include "fonts/MediumWideFont.h" // NOLINT(misc-include-cleaner)
+#include "fonts/MiniFont.h"       // NOLINT(misc-include-cleaner)
 #include "modules/ModeModule.h"
 
+#include <bits/unique_ptr.h>
 #include <vector>
 
 class ClockMode final : public ModeModule
 {
 private:
+    static constexpr auto fontNames{std::to_array<std::string_view>({
+#if FONT_MINI
+        MiniFont::name,
+#endif
+#if FONT_MEDIUM
+        MediumFont::name,
+#endif
+#if FONT_MEDIUMBOLD
+        MediumBoldFont::name,
+#endif
+#if FONT_MEDIUMWIDE
+        MediumWideFont::name,
+#endif
+    })};
+
+    static inline bool ticking{true};
+
+    static inline std::string fontName{fontNames[0U]};
+
     tm local{};
 
-    bool pending = false;
-    bool ticking = false;
+    bool pending{false};
+    bool strikethrough{false};
 
-    int hour = 24;
-    int minute = 60;
-    int second = 60;
+    int hour{24U};
+    int minute{60U};
+    int second{60U};
 
-    uint8_t cellSize = 7;
-
-    FontModule *font = nullptr;
-
-    std::vector<FontModule *> fonts{};
-
-    void borderPixel(uint8_t sec, uint8_t brightness);
-    void drawDigits();
-    void setFont(const char *fontName);
+    void drawTicker(uint8_t brightness) const;
+    void setFont(std::string_view _fontName);
     void setTicking(bool _ticking);
     void transmit();
 
 public:
-    explicit ClockMode() : ModeModule("Clock") {};
+    static constexpr std::string_view name{"Clock"};
+
+    explicit ClockMode() : ModeModule(name) {};
 
     void configure() override;
     void begin() override;
     void handle() override;
-    void onReceive(JsonObjectConst payload, const char *source) override;
+    void onReceive(JsonObjectConst payload, std::string_view source) override;
+
+#if EXTENSION_HOMEASSISTANT
+    void onHomeAssistant(JsonDocument &discovery, std::string topic, std::string unique) override;
+#endif
 };
 
 #endif // MODE_CLOCK

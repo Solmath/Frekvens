@@ -7,7 +7,8 @@
 /**
  * Display
  */
-// #define FRAME_RATE 60 // fps
+// #define FRAME_RATE 72 // fps
+// #define PWM_DEPTH 10  // bit
 
 /**
  * Weather
@@ -15,9 +16,6 @@
 // #define LATITUDE "0.000" // °
 // #define LONGITUDE "0.000" // °
 // #define LOCATION "city"
-// #define TEMPERATURE_CELSIUS true
-// #define TEMPERATURE_FAHRENHEIT true
-// #define TEMPERATURE_KELVIN true
 
 /**
  * Wi-Fi

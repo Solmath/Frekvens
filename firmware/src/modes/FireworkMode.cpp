@@ -4,18 +4,22 @@
 
 #include "extensions/MicrophoneExtension.h"
 #include "services/DisplayService.h"
+#include "services/ExtensionsService.h"
+
+static_assert(GRID_COLUMNS >= 4U, __STRING(MODE_FIREWORK) " is not compatible with this device's display size.");
+static_assert(GRID_ROWS >= 4U, __STRING(MODE_FIREWORK) " is not compatible with this device's display size.");
 
 void FireworkMode::handle()
 {
     switch (stage)
     {
-    case 1:
+    case 1U:
         launching();
         break;
-    case 2:
+    case 2U:
         exploding();
         break;
-    case 3:
+    case 3U:
         fading();
         break;
     default:
@@ -27,38 +31,38 @@ void FireworkMode::handle()
 void FireworkMode::pad()
 {
 #if EXTENSION_MICROPHONE
-    if (Microphone->isTriggered())
+    if (Extensions.Microphone().isTriggered())
 #endif // EXTENSION_MICROPHONE
     {
         rocketX = random(GRID_COLUMNS);
         rocketY = GRID_ROWS;
-        stage = 1;
+        stage = 1U;
     }
 }
 
 void FireworkMode::launching()
 {
-    if (millis() - lastMillis > (1UL << 6U))
+    if (millis() - lastMillis > (1U << 6U))
     {
         if (rocketY < GRID_ROWS)
         {
-            Display.setPixel(rocketX, rocketY, 0);
+            Display.setPixel(rocketX, rocketY, 0U);
         }
         --rocketY;
-        Display.setPixel(rocketX, rocketY, 1);
+        Display.setPixel(rocketX, rocketY, 1U);
         lastMillis = millis();
         if (rocketY <= random(GRID_ROWS / 2))
         {
-            radius = 0;
+            radius = 0U;
 #if PITCH_VERTICAL == PITCH_HORIZONTAL
             maxRadius = random(1, min(GRID_COLUMNS, GRID_ROWS) / 2);
 #else
             maxRadius = random(2,
                                min(GRID_COLUMNS * PITCH_HORIZONTAL / static_cast<float>(PITCH_VERTICAL),
                                    GRID_ROWS / static_cast<float>(PITCH_HORIZONTAL * PITCH_VERTICAL)) /
-                                   2);
+                                   2.0F);
 #endif // PITCH_VERTICAL == PITCH_HORIZONTAL
-            stage = 2;
+            stage = 2U;
         }
     }
 }
@@ -68,12 +72,12 @@ void FireworkMode::exploding()
     if (millis() - lastMillis > INT8_MAX)
     {
         ++radius;
-        Display.drawEllipse(rocketX, rocketY, radius, 1, true, UINT8_MAX / maxRadius * radius);
+        Display.drawEllipse(rocketX, rocketY, radius, true, UINT8_MAX / maxRadius * radius);
         lastMillis = millis();
         if (radius >= maxRadius)
         {
             brightness = UINT8_MAX;
-            stage = 3;
+            stage = 3U;
         }
     }
 }
@@ -84,11 +88,11 @@ void FireworkMode::fading()
     {
         --brightness;
     }
-    Display.drawEllipse(rocketX, rocketY, radius, 1, true, brightness);
+    Display.drawEllipse(rocketX, rocketY, radius, true, brightness);
     lastMillis = millis();
-    if (brightness <= 0)
+    if (brightness == 0U)
     {
-        stage = 0;
+        stage = 0U;
         Display.clearFrame();
     }
 }

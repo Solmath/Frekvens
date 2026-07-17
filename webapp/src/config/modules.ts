@@ -7,6 +7,7 @@ export const EXTENSION_OTA: boolean = import.meta.env.VITE_EXTENSION_OTA === "tr
 export const EXTENSION_PHOTOCELL: boolean = import.meta.env.VITE_EXTENSION_PHOTOCELL === "true";
 export const EXTENSION_PLAYLIST: boolean = import.meta.env.VITE_EXTENSION_PLAYLIST === "true";
 export const EXTENSION_RESTFUL: boolean = import.meta.env.VITE_EXTENSION_RESTFUL === "true";
+export const EXTENSION_SCREENSHOT: boolean = import.meta.env.VITE_EXTENSION_SCREENSHOT === "true";
 export const EXTENSION_SIGNAL: boolean = import.meta.env.VITE_EXTENSION_SIGNAL === "true";
 
 export const MODE_ANIMATION: boolean = import.meta.env.VITE_MODE_ANIMATION === "true";
@@ -26,27 +27,19 @@ export const MODE_FIREWORK: boolean = import.meta.env.VITE_MODE_FIREWORK === "tr
 export const MODE_FLIES: boolean = import.meta.env.VITE_MODE_FLIES === "true";
 export const MODE_GAMEOFLIFE: boolean = import.meta.env.VITE_MODE_GAMEOFLIFE === "true";
 export const MODE_GLITTER: boolean = import.meta.env.VITE_MODE_GLITTER === "true";
-export const MODE_GOOGLEWEATHER: boolean = import.meta.env.VITE_MODE_GOOGLEWEATHER === "true";
-export const MODE_HOMEASSISTANTWEATHER: boolean = import.meta.env.VITE_MODE_HOMEASSISTANTWEATHER === "true";
 export const MODE_HOMETHERMOMETER: boolean = import.meta.env.VITE_MODE_HOMETHERMOMETER === "true";
-export const MODE_JAGGEDWAVEFORM: boolean = import.meta.env.VITE_MODE_JAGGEDWAVEFORM === "true";
 export const MODE_LEAFFALL: boolean = import.meta.env.VITE_MODE_LEAFFALL === "true";
 export const MODE_LINES: boolean = import.meta.env.VITE_MODE_LINES === "true";
 export const MODE_METABALLS: boolean = import.meta.env.VITE_MODE_METABALLS === "true";
 export const MODE_NOISE: boolean = import.meta.env.VITE_MODE_NOISE === "true";
-export const MODE_OPENMETEO: boolean = import.meta.env.VITE_MODE_OPENMETEO === "true";
-export const MODE_OPENWEATHER: boolean = import.meta.env.VITE_MODE_OPENWEATHER === "true";
 export const MODE_PINGPONG: boolean = import.meta.env.VITE_MODE_PINGPONG === "true";
 export const MODE_PIXELSEQUENCE: boolean = import.meta.env.VITE_MODE_PIXELSEQUENCE === "true";
 export const MODE_RAIN: boolean = import.meta.env.VITE_MODE_RAIN === "true";
 export const MODE_RING: boolean = import.meta.env.VITE_MODE_RING === "true";
 export const MODE_SCAN: boolean = import.meta.env.VITE_MODE_SCAN === "true";
-export const MODE_SMOOTHWAVEFORM: boolean = import.meta.env.VITE_MODE_SMOOTHWAVEFORM === "true";
 export const MODE_SNAKE: boolean = import.meta.env.VITE_MODE_SNAKE === "true";
 export const MODE_STARS: boolean = import.meta.env.VITE_MODE_STARS === "true";
 export const MODE_STREAM: boolean = import.meta.env.VITE_MODE_STREAM === "true";
 export const MODE_TICKER: boolean = import.meta.env.VITE_MODE_TICKER === "true";
 export const MODE_WAVEFORM: boolean = import.meta.env.VITE_MODE_WAVEFORM === "true";
-export const MODE_WORLDWEATHERONLINE: boolean = import.meta.env.VITE_MODE_WORLDWEATHERONLINE === "true";
-export const MODE_WTTRIN: boolean = import.meta.env.VITE_MODE_WTTRIN === "true";
-export const MODE_YR: boolean = import.meta.env.VITE_MODE_YR === "true";
+export const MODE_WEATHER: boolean = import.meta.env.VITE_MODE_WEATHER === "true";

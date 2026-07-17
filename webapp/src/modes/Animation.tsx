@@ -5,14 +5,18 @@ import {
     mdiDelete,
     mdiDownload,
     mdiEraser,
+    mdiFileOutline,
+    mdiImageFrame,
+    mdiLaptop,
+    mdiPlay,
+    mdiPlaySpeed,
     mdiPlus,
-    mdiPresentation,
-    mdiPresentationPlay,
+    mdiStop,
     mdiUpload,
 } from "@mdi/js";
 import { type Component, createEffect, createSignal, For, Show } from "solid-js";
 
-import { Canvas, Strength } from "../components/Canvas";
+import { Canvas, StrengthComponent as CanvasStrengthComponent } from "../components/Canvas";
 import { csvExport, fileImport } from "../components/File";
 import { Icon } from "../components/Icon";
 import { Toast } from "../components/Toast";
@@ -35,7 +39,7 @@ const [getFrames, setFrames] = createSignal<Frame[]>([]);
 const [getFramesDraft, setFramesDraft] = createSignal<FrameSignal[]>([]);
 const [getPreview, setPreview] = createSignal<boolean>(false);
 const [getPreviewIndex, setPreviewIndex] = createSignal<number>(0);
-const [getPreviewTimer, setPreviewTimer] = createSignal<NodeJS.Timeout | undefined>(undefined);
+const [getPreviewTimer, setPreviewTimer] = createSignal<ReturnType<typeof setInterval> | undefined>(undefined);
 const [getSaved, setSaved] = createSignal<boolean>(true);
 
 export const receiver = (json: { frame?: Frame; index?: number; interval?: number }) => {
@@ -141,7 +145,7 @@ export const Sidebar: Component = () => {
 
     const handleDownload = () => {
         csvExport(
-            name,
+            name.toLowerCase(),
             getFramesDraft().map(([getFrame]) => getFrame()),
         );
     };
@@ -208,8 +212,24 @@ export const Sidebar: Component = () => {
     };
 
     return (
-        <SidebarSection title={name}>
-            <div class="grid grid-cols-2 gap-3">
+        <SidebarSection>
+            <div class="action grid-cols-[--spacing(4)_1fr_--spacing(12)]">
+                <Icon path={mdiImageFrame} />
+                Add frame
+                <Tooltip text={`Add frame #${getFramesDraft().length + 1}`}>
+                    <button
+                        class={`action-neutral w-full ${getFramesDraft().length < 2 ? "not-hover:enabled:bg-neutral-light dark:not-hover:enabled:bg-neutral-dark not-hover:enabled:text-interactive-light dark:not-hover:enabled:text-content-dark" : ""}`}
+                        disabled={getPreview()}
+                        onclick={handleAdd}
+                        type="button"
+                    >
+                        <Icon path={mdiPlus} />
+                    </button>
+                </Tooltip>
+            </div>
+            <div class="action grid-cols-[--spacing(4)_1fr_--spacing(12)]">
+                <Icon path={mdiLaptop} />
+                Preview
                 <Tooltip text={`${getPreview() ? "Stop" : "Preview"} animation`}>
                     <button
                         class={`w-full ${getPreview() ? "action-negative not-hover:bg-neutral-light dark:not-hover:bg-neutral-dark not-hover:enabled:text-interactive-light dark:not-hover:enabled:text-content-dark" : ""}`}
@@ -220,17 +240,21 @@ export const Sidebar: Component = () => {
                         onclick={handlePreview}
                         type="button"
                     >
-                        <Icon path={getPreview() ? mdiPresentationPlay : mdiPresentation} />
+                        <Icon path={getPreview() ? mdiStop : mdiPlay} />
                     </button>
                 </Tooltip>
-                <Tooltip text={`Add frame #${getFramesDraft().length + 1}`}>
+            </div>
+            <div class="action grid-cols-[--spacing(4)_1fr_--spacing(12)_--spacing(12)]">
+                <Icon path={mdiAnimationPlay} />
+                Animation
+                <Tooltip text="Restore animation">
                     <button
-                        class={`action-neutral w-full ${getFramesDraft().length < 2 ? "not-hover:enabled:bg-neutral-light dark:not-hover:enabled:bg-neutral-dark not-hover:enabled:text-interactive-light dark:not-hover:enabled:text-content-dark" : ""}`}
-                        disabled={getPreview()}
-                        onclick={handleAdd}
+                        class={`action-neutral w-full ${!getFramesDraft().length ? "not-hover:enabled:bg-neutral-light dark:not-hover:enabled:bg-neutral-dark not-hover:enabled:text-interactive-light dark:not-hover:enabled:text-content-dark" : ""}`}
+                        disabled={!getFrames().length || getSaved()}
+                        onclick={handleLoad}
                         type="button"
                     >
-                        <Icon path={mdiPlus} />
+                        <Icon path={mdiBackupRestore} />
                     </button>
                 </Tooltip>
                 <Tooltip text="Save animation">
@@ -247,14 +271,18 @@ export const Sidebar: Component = () => {
                         <Icon path={mdiContentSave} />
                     </button>
                 </Tooltip>
-                <Tooltip text="Restore animation">
+            </div>
+            <div class="action grid-cols-[--spacing(4)_1fr_--spacing(12)_--spacing(12)]">
+                <Icon path={mdiFileOutline} />
+                Import/export
+                <Tooltip text="Upload animation, drawing or image">
                     <button
-                        class={`action-neutral w-full ${!getFramesDraft().length ? "not-hover:enabled:bg-neutral-light dark:not-hover:enabled:bg-neutral-dark not-hover:enabled:text-interactive-light dark:not-hover:enabled:text-content-dark" : ""}`}
-                        disabled={!getFrames().length || getSaved()}
-                        onclick={handleLoad}
+                        class="w-full"
+                        disabled={getPreview()}
+                        onclick={handleUpload}
                         type="button"
                     >
-                        <Icon path={mdiBackupRestore} />
+                        <Icon path={mdiUpload} />
                     </button>
                 </Tooltip>
                 <Tooltip text="Download animation">
@@ -270,39 +298,32 @@ export const Sidebar: Component = () => {
                         <Icon path={mdiDownload} />
                     </button>
                 </Tooltip>
-                <Tooltip text="Upload animation, drawing or image">
-                    <button
-                        class="w-full"
-                        disabled={getPreview()}
-                        onclick={handleUpload}
-                        type="button"
-                    >
-                        <Icon path={mdiUpload} />
-                    </button>
+            </div>
+            <div class="action grid-cols-[--spacing(4)_1fr]">
+                <Icon path={mdiPlaySpeed} />
+                <Tooltip text={`${(1_000 / getFrameInterval()).toFixed(1)} fps`}>
+                    <div class="relative">
+                        <span class="absolute text-content-alt-light dark:text-content-alt-dark left-3 top-1/2 -translate-y-1/2 text-sm">
+                            Frame interval:
+                        </span>
+                        <input
+                            class="text-right pr-6 w-full"
+                            disabled={getPreview()}
+                            max={(2 ** 16 - 1) / 1_000}
+                            name="Interval"
+                            min="0.05"
+                            onChange={(e) => handleInterval(Math.round(e.currentTarget.valueAsNumber * 1_000))}
+                            step="0.05"
+                            type="number"
+                            value={getFrameInterval() / 1_000}
+                        />
+                        <span class="absolute text-content-alt-light dark:text-content-alt-dark right-3 top-1/2 -translate-y-1/2 text-sm">
+                            s
+                        </span>
+                    </div>
                 </Tooltip>
             </div>
-            <Tooltip text={`${(1_000 / getFrameInterval()).toFixed(1)} fps`}>
-                <div class="mt-3 relative">
-                    <span class="absolute text-content-alt-light dark:text-content-alt-dark left-3 top-1/2 -translate-y-1/2 text-sm">
-                        Frame interval:
-                    </span>
-                    <input
-                        class="text-right pr-6 w-full"
-                        disabled={getPreview()}
-                        max={(2 ** 16 - 1) / 1_000}
-                        name="Interval"
-                        min="0.05"
-                        onChange={(e) => handleInterval(Math.round(parseFloat(e.currentTarget.value) * 1_000))}
-                        step="0.05"
-                        type="number"
-                        value={getFrameInterval() / 1_000}
-                    />
-                    <span class="absolute text-content-alt-light dark:text-content-alt-dark right-3 top-1/2 -translate-y-1/2 text-sm">
-                        s
-                    </span>
-                </div>
-            </Tooltip>
-            <Strength />
+            <CanvasStrengthComponent />
         </SidebarSection>
     );
 };
@@ -352,7 +373,7 @@ export const Main: Component = () => {
         >
             <div class="bg-contrast-light dark:bg-contrast-dark h-full relative rounded-none">
                 <div
-                    class={`snap-x snap-mandatory flex flex-nowrap overflow-x-auto h-full items-center px-6 gap-[calc((100vw---spacing(80))*0.05)] ${getPreview() ? "justify-center-safe" : "justify-start"}`}
+                    class={`snap-x snap-mandatory flex flex-nowrap overflow-x-auto h-full items-center px-6 gap-[calc((100vw-(--spacing(80)))*0.05)] ${getPreview() ? "justify-center-safe" : "justify-start"}`}
                     ref={(div) => {
                         divRef = div;
                     }}
@@ -365,7 +386,7 @@ export const Main: Component = () => {
                         <For each={getFramesDraft()}>
                             {([getFrame, setFrame], index) => (
                                 <div
-                                    class={`snap-center max-h-[calc(100vh---spacing(32))] shrink-0 ${WebAppSidebar() ? "max-w-[calc((100vw---spacing(80))*0.8)]" : "max-w-[80vw]"}`}
+                                    class={`snap-center max-h-[calc(100vh-(--spacing(32)))] shrink-0 ${WebAppSidebar() ? "max-w-[calc((100vw-(--spacing(80)))*0.8)]" : "max-w-[80vw]"}`}
                                 >
                                     <header class="flex justify-between items-center mb-4">
                                         <div class="flex gap-3">

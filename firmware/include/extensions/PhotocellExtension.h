@@ -7,39 +7,43 @@
 class PhotocellExtension final : public ExtensionModule
 {
 private:
-    bool active = false;
-    bool direction = false;
-    bool pending = false;
+    static constexpr std::string_view name{"Photocell"};
 
-    float gamma = 1.0F;
+    bool active{false};
+    bool direction{false};
+    bool pending{false};
 
-    uint8_t brightness = UINT8_MAX;
+    float gamma{1.0F};
 
-    int16_t counter = 0;
+    int16_t debounce{0};
 
-    uint16_t raw = 0;
+    uint8_t brightness{UINT8_MAX};
 
-    unsigned long lastMillis = 0;
-    unsigned long _lastMillis = 0;
+    uint16_t raw{0U};
+
+    unsigned long lastMillis{0UL};
+    unsigned long _lastMillis{0UL};
 
     void setGamma(float _gamma);
 
     void transmit();
 
 public:
-    explicit PhotocellExtension();
+    explicit PhotocellExtension() : ExtensionModule(name) {};
 
     void configure() override;
     void begin() override;
     void handle() override;
 
     [[nodiscard]] bool getActive() const;
-    void setActive(bool active);
+    void setActive(bool _active);
 
-    void onReceive(JsonObjectConst payload, const char *source) override;
-    void onTransmit(JsonObjectConst payload, const char *source) override;
+    void onReceive(JsonObjectConst payload, std::string_view source) override;
+    void onTransmit(JsonObjectConst payload, std::string_view source) override;
+
+#if EXTENSION_HOMEASSISTANT
+    void onHomeAssistant(JsonDocument &discovery, std::string topic, std::string unique) override;
+#endif
 };
-
-extern PhotocellExtension *Photocell; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 #endif // EXTENSION_PHOTOCELL

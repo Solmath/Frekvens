@@ -1,24 +1,29 @@
-import { mdiTimerSand, mdiTimerSandComplete } from "@mdi/js";
+import { mdiFormatFont, mdiTarget, mdiTimerSand, mdiTimerSandComplete } from "@mdi/js";
 import Cookies from "js-cookie";
-import { type Component, createSignal } from "solid-js";
+import { type Component, createSignal, For } from "solid-js";
+import { Temporal } from "temporal-polyfill-lite";
 
 import { Icon } from "../components/Icon";
 import { Toast } from "../components/Toast";
 import { Tooltip } from "../components/Tooltip";
 import { SidebarSection } from "../extensions/WebApp";
 import { WebSocketWS } from "../extensions/WebSocket";
-import { name as DisplayName } from "../services/Display";
+import { name as DisplayName, DisplayPower } from "../services/Display";
 import { ModesMode, name as ModesName } from "../services/Modes";
 
 export const name = "Countdown";
 
-const [getHours, setHours] = createSignal<number>(parseInt(Cookies.get(`${name}.hours`) || "", 10) || 0);
-const [getMinutes, setMinutes] = createSignal<number>(parseInt(Cookies.get(`${name}.minutes`) || "", 10) || 10);
-const [getSeconds, setSeconds] = createSignal<number>(parseInt(Cookies.get(`${name}.seconds`) || "", 10) || 0);
-const [getTimestamp, setTimestamp] = createSignal<string | undefined>(undefined);
+const [getFont, setFont] = createSignal<string>("");
+const [getFonts, setFonts] = createSignal<string[]>([]);
+const [getHours, setHours] = createSignal<number>(parseInt(Cookies.get(`${name}.hours`) ?? "0", 10));
+const [getMinutes, setMinutes] = createSignal<number>(parseInt(Cookies.get(`${name}.minutes`) ?? "10", 10));
+const [getSeconds, setSeconds] = createSignal<number>(parseInt(Cookies.get(`${name}.seconds`) ?? "0", 10));
+const [getTimestamp, setTimestamp] = createSignal<string>("");
 
-export const receiver = (json: { event?: string; timestamp?: string | undefined }) => {
+export const receiver = (json: { event?: string; font?: string; fonts?: string[]; timestamp?: string }) => {
     json?.event !== undefined && event(json.event);
+    json?.font !== undefined && setFont(json.font);
+    json?.fonts !== undefined && setFonts(json.fonts);
     json?.timestamp !== undefined && setTimestamp(json.timestamp);
 };
 
@@ -38,12 +43,16 @@ const handleRelative = () => {
             [name]: {
                 time: getHours() * 3600 + getMinutes() * 60 + getSeconds(),
             },
-            [DisplayName]: {
-                power: true,
-            },
-            [ModesName]: {
-                mode: name,
-            },
+            ...(!DisplayPower() && {
+                [DisplayName]: {
+                    power: true,
+                },
+            }),
+            ...(ModesMode() !== name && {
+                [ModesName]: {
+                    mode: name,
+                },
+            }),
         }),
     );
     toast(`${name} started`);
@@ -97,7 +106,7 @@ export const Link: Component = () => (
 
 export const Sidebar: Component = () => {
     const handleAbsolute = (timestamp: string) => {
-        if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(timestamp)) {
+        if (timestamp.length === 16) {
             timestamp += ":00";
         }
         WebSocketWS.send(
@@ -107,18 +116,43 @@ export const Sidebar: Component = () => {
                 },
             }),
         );
-        toast(`${name} updated`);
+    };
+
+    const handleFont = (font: string) => {
+        setFont(font);
+        WebSocketWS.send(
+            JSON.stringify({
+                [name]: {
+                    font: getFont(),
+                },
+            }),
+        );
     };
 
     return (
-        <SidebarSection title={name}>
-            <input
-                class="w-full"
-                type="datetime-local"
-                min={new Date().toISOString().slice(0, 16)}
-                value={getTimestamp()}
-                onChange={(e) => handleAbsolute(e.currentTarget.value)}
-            />
+        <SidebarSection>
+            <div class="action grid-cols-[--spacing(4)_1fr]">
+                <Icon path={mdiTarget} />
+                <input
+                    class="w-full"
+                    type="datetime-local"
+                    min={Temporal.Now.plainDateTimeISO().toString({
+                        smallestUnit: "minute",
+                    })}
+                    value={getTimestamp().slice(0, 16)}
+                    onChange={(e) => handleAbsolute(e.currentTarget.value)}
+                />
+            </div>
+            <div class="action grid-cols-[--spacing(4)_1fr]">
+                <Icon path={mdiFormatFont} />
+                <select
+                    class="w-full"
+                    onchange={(e) => handleFont(e.currentTarget.value)}
+                    value={getFont()}
+                >
+                    <For each={getFonts()}>{(font) => <option>{font}</option>}</For>
+                </select>
+            </div>
         </SidebarSection>
     );
 };

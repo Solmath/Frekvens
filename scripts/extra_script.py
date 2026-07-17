@@ -1,35 +1,53 @@
-# PlatformIO pre-build extra script
-
 import os
-import SCons.Script
+import pathlib
+import re
+import subprocess
 import sys
 import typing
 
+if typing.TYPE_CHECKING:
+    from .src.components.Types import COMMAND_LINE_TARGETS, Environment, Import  # noqa: E402
+else:
+    from SCons.Script import COMMAND_LINE_TARGETS, Environment, Import  # noqa: E402
 
-if SCons.Script.COMMAND_LINE_TARGETS not in [
-    ["erase"],
-    ["menuconfig"],
-    ["size"],
-]:
-    if typing.TYPE_CHECKING:
 
-        def Import(*vars) -> None:
-            pass
+def main() -> None:
+    if COMMAND_LINE_TARGETS in [
+        ["erase"],
+        ["menuconfig"],
+        ["size"],
+    ]:
+        return
 
     Import("env")
+    env: Environment = typing.cast(Environment, globals()["env"])
 
-    if typing.TYPE_CHECKING:
-        env = SCons.Script.Environment()
-
-    if not env.IsCleanTarget():
-        env.Execute(
-            "pip install -r scripts/requirements.txt"
-            if int(SCons.Script.ARGUMENTS["PIOVERBOSE"]) or "CI" in os.environ
-            else "pip install -q -r scripts/requirements.txt"
+    uv_env = os.environ.copy()
+    uv_env["VIRTUAL_ENV"] = os.path.join(env.subst("$PROJECT_CORE_DIR"), "penv")
+    uv = subprocess.run(
+        [sys.executable, "-m", "uv", "sync", "--active", "--inexact", "--only-group", "scripts"],
+        stderr=subprocess.DEVNULL,
+        env=uv_env,
+    )
+    if uv.returncode:
+        match = re.search(r'"(uv==\d+\.\d+\.\d+)"', pathlib.Path("pyproject.toml").read_text())
+        pip = subprocess.run(
+            [sys.executable, "-m", "pip", "install", match.group(1) if match else "uv"],
+            stderr=subprocess.DEVNULL,
         )
+        if pip.returncode:
+            subprocess.run([sys.executable, "-m", "ensurepip"], check=True)
+            subprocess.run(pip.args, check=True)
+        subprocess.run(uv.args, env=uv_env, check=True)
 
-    sys.path.append(env["PROJECT_DIR"])
+    from src.Frekvens import Frekvens  # noqa: E402
 
-    from scripts.src.Frekvens import Frekvens  # noqa: E402
+    if env.IsCleanTarget():
+        Frekvens.clean()
+        return
 
-    Frekvens.clean() if env.IsCleanTarget() else Frekvens(env).run()
+    Frekvens(env).run()
+
+
+if __name__ == "SCons.Script":
+    main()

@@ -1,152 +1,81 @@
 #pragma once
 
+#if FONT_LARGE
+
 #include "modules/FontModule.h"
+
+#include <array>
+#include <span>
 
 class LargeFont final : public FontModule
 {
 private:
-    const std::vector<Symbol> ascii = {
-        {
-            // 0x20, SPACE
-            {},
-            6,
-            0,
-        },
-        {
-            // 0x21, !
-            {
-                0b11,
-                0b11,
-                0b11,
-                0b11,
-                0b11,
-                0b00,
-                0b11,
-                0b11,
-            },
-            0,
-            0,
-        },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {
-            // 0x49, I
-            {
-                0b111111,
-                0b001100,
-                0b001100,
-                0b001100,
-                0b001100,
-                0b001100,
-                0b001100,
-                0b111111,
-            },
-            0,
-            0,
-        },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {
-            // 0x52, R
-            {
-                0b111110,
-                0b110011,
-                0b110011,
-                0b110010,
-                0b111100,
-                0b110011,
-                0b110011,
-                0b110011,
-            },
-            0,
-            0,
-        },
-        {},
-        {},
-        {
-            // 0x55, U
-            {
-                0b110011,
-                0b110011,
-                0b110011,
-                0b110011,
-                0b110011,
-                0b110011,
-                0b111111,
-                0b011111,
-            },
-            0,
-            0,
-        },
+    // U+0021 ! EXCLAMATION MARK
+    static constexpr std::array<uint8_t, 8U> exclamationMark{
+        0b11U,
+        0b11U,
+        0b11U,
+        0b11U,
+        0b11U,
+        0b00U,
+        0b11U,
+        0b11U,
     };
 
-    const std::vector<SymbolExtended> unicode = {
-        {
-            0x3C0, // π GREEK SMALL LETTER PI
-            {
-                {
-                    0b11111111,
-                    0b11111111,
-                    0b00100100,
-                    0b00100100,
-                    0b00100100,
-                    0b00100100,
-                    0b00100101,
-                    0b11000010,
-                },
-                0,
-                0,
-            },
-        },
+    // U+0049 I LATIN CAPITAL LETTER I
+    static constexpr std::array<uint8_t, 8U> latinCapitalLetterI{
+        0b111111U,
+        0b001100U,
+        0b001100U,
+        0b001100U,
+        0b001100U,
+        0b001100U,
+        0b001100U,
+        0b111111U,
+    };
+
+    // U+0052 R LATIN CAPITAL LETTER R
+    static constexpr std::array<uint8_t, 8U> latinCapitalLetterR{
+        0b111110U,
+        0b110011U,
+        0b110011U,
+        0b110010U,
+        0b111100U,
+        0b110011U,
+        0b110011U,
+        0b110011U,
+    };
+
+    // U+0055 U LATIN CAPITAL LETTER U
+    static constexpr std::array<uint8_t, 8U> latinCapitalLetterU{
+        0b110011U,
+        0b110011U,
+        0b110011U,
+        0b110011U,
+        0b110011U,
+        0b110011U,
+        0b111111U,
+        0b011111U,
+    };
+
+    // U+03C0 π GREEK SMALL LETTER PI
+    static constexpr std::array<uint8_t, 8U> greekSmallLetterPi{
+        0b11111111U,
+        0b11111111U,
+        0b00100100U,
+        0b00100100U,
+        0b00100100U,
+        0b00100100U,
+        0b00100101U,
+        0b11000010U,
     };
 
 public:
-    explicit LargeFont();
+    static constexpr std::string_view name{"Large"};
 
-    [[nodiscard]] Symbol getChar(uint32_t character) const override;
+    explicit LargeFont() : FontModule(name) {};
+
+    [[nodiscard]] FontModule::Symbol getChar(char32_t character) const override;
 };
 
-extern LargeFont *FontLarge; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+#endif // FONT_LARGE

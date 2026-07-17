@@ -3,73 +3,52 @@
 #include "modes/StreamMode.h"
 
 #include "config/constants.h" // NOLINT(misc-include-cleaner)
-#include "extensions/HomeAssistantExtension.h"
 #include "services/DeviceService.h"
 #include "services/DisplayService.h"
+#include "services/ExtensionsService.h" // NOLINT(misc-include-cleaner)
 
-#include <Preferences.h>
+#include <nvs.h>
 #include <span>
 
 void StreamMode::configure()
 {
-#if EXTENSION_HOMEASSISTANT
-    const std::string topic{std::string("frekvens/" HOSTNAME "/").append(name)};
+    nvs_handle_t handle{};
+    if (nvs_open(name.data(), nvs_open_mode_t::NVS_READONLY, &handle) == ESP_OK)
     {
-        const std::string id{std::string(name).append("_protocol")};
-        JsonObject component{(*HomeAssistant->discovery)[HomeAssistantAbbreviations::components][id].to<JsonObject>()};
-        component[HomeAssistantAbbreviations::command_template].set(
-            R"({"port":{{{"Art-Net":6454,"Distributed Display Protocol":4048,"E1.31":5568}.get(value)}}})");
-        component[HomeAssistantAbbreviations::command_topic].set(topic + "/set");
-        component[HomeAssistantAbbreviations::enabled_by_default].set(false);
-        component[HomeAssistantAbbreviations::entity_category].set("config");
-        component[HomeAssistantAbbreviations::icon].set("mdi:protocol");
-        component[HomeAssistantAbbreviations::name].set(std::string(name).append(" protocol"));
-        component[HomeAssistantAbbreviations::object_id].set(HOSTNAME "_" + id);
-        JsonArray options{component[HomeAssistantAbbreviations::options].to<JsonArray>()};
-        options.add("Art-Net");
-        options.add("Distributed Display Protocol");
-        options.add("E1.31");
-        component[HomeAssistantAbbreviations::platform].set("select");
-        component[HomeAssistantAbbreviations::state_topic].set(topic);
-        component[HomeAssistantAbbreviations::unique_id].set(HomeAssistant->uniquePrefix + id);
-        component[HomeAssistantAbbreviations::value_template].set(
-            R"({{{4048:"Distributed Display Protocol",5568:"E1.31",6454:"Art-Net"}.get(value_json.port)}})");
+        nvs_get_u16(handle, "port", &port);
+        nvs_close(handle);
     }
-#endif // EXTENSION_HOMEASSISTANT
-    Preferences Storage;
-    Storage.begin(name, true);
-    if (Storage.isKey("port"))
-    {
-        port = Storage.getUShort("port");
-    }
-    Storage.end();
     transmit();
 }
 
 void StreamMode::begin()
 {
-    udp = std::make_unique<AsyncUDP>();
-    if (udp->listen(port))
+    if (udp.listen(port))
     {
-        udp->onPacket(&onPacket);
-        ESP_LOGD(name, "listening at " HOSTNAME ".local:%d", port); // NOLINT(cppcoreguidelines-avoid-do-while)
+        udp.onPacket(&onPacket);
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
+        ESP_LOGD(name.data(), "listening at " HOSTNAME ".local:%u", port);
     }
 }
 
 void StreamMode::set(uint16_t _port)
 {
-    if (_port != port && (_port == 4048 || _port == 5568 || _port == 6454))
+    if (_port != 4048 && _port != 5568 && _port != 6454)
     {
-        port = _port;
-        Preferences Storage;
-        Storage.begin(name);
-        Storage.putUShort("port", port);
-        Storage.end();
-        if (udp)
-        {
-            udp->listen(port);
-            ESP_LOGD(name, "listening at " HOSTNAME ".local:%d", port); // NOLINT(cppcoreguidelines-avoid-do-while)
-        }
+        return;
+    }
+    port = _port;
+    nvs_handle_t handle{};
+    if (nvs_open(name.data(), nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
+    {
+        nvs_set_u16(handle, "port", port);
+        nvs_commit(handle);
+        nvs_close(handle);
+    }
+    if (udp.listen(port))
+    {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
+        ESP_LOGD(name.data(), "listening at " HOSTNAME ".local:%u", port);
         transmit();
     }
 }
@@ -82,7 +61,7 @@ void StreamMode::transmit()
 }
 
 void StreamMode::onReceive(JsonObjectConst payload,
-                           const char *source) // NOLINT(misc-unused-parameters)
+                           std::string_view source) // NOLINT(misc-unused-parameters)
 {
     // Port
     if (payload["port"].is<uint16_t>())
@@ -93,7 +72,6 @@ void StreamMode::onReceive(JsonObjectConst payload,
 
 void StreamMode::onPacket(AsyncUDPPacket packet)
 {
-    const uint16_t port = packet.localPort();
     const size_t len = packet.length();
     if ((port == 4048 && (len == 10 + (GRID_COLUMNS * GRID_ROWS) || len == 14 + (GRID_COLUMNS * GRID_ROWS))) ||
         (port == 6454 && len == 18 + (GRID_COLUMNS * GRID_ROWS)) ||
@@ -103,6 +81,32 @@ void StreamMode::onPacket(AsyncUDPPacket packet)
     }
 }
 
-void StreamMode::end() { udp.reset(); }
+#if EXTENSION_HOMEASSISTANT
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+void StreamMode::onHomeAssistant(JsonDocument &discovery, std::string topic, std::string unique)
+{
+    topic.append(name);
+    {
+        const std::string id{std::string(name).append("_protocol")};
+        JsonObject component{discovery[HomeAssistantAbbreviations::components][id].to<JsonObject>()};
+        component[HomeAssistantAbbreviations::command_template].set(
+            R"({"port":{{{"Art-Net":6454,"Distributed Display Protocol":4048,"E1.31":5568}.get(value)}}})");
+        component[HomeAssistantAbbreviations::command_topic].set(topic + "/set");
+        component[HomeAssistantAbbreviations::enabled_by_default].set(false);
+        component[HomeAssistantAbbreviations::entity_category].set("config");
+        component[HomeAssistantAbbreviations::icon].set("mdi:protocol");
+        component[HomeAssistantAbbreviations::name].set(std::string(name).append(" protocol"));
+        JsonArray options{component[HomeAssistantAbbreviations::options].to<JsonArray>()};
+        options.add("Art-Net");
+        options.add("Distributed Display Protocol");
+        options.add("E1.31");
+        component[HomeAssistantAbbreviations::platform].set("select");
+        component[HomeAssistantAbbreviations::state_topic].set(topic);
+        component[HomeAssistantAbbreviations::unique_id].set(unique + id);
+        component[HomeAssistantAbbreviations::value_template].set(
+            R"({{{4048:"Distributed Display Protocol",5568:"E1.31",6454:"Art-Net"}.get(value_json.port)}})");
+    }
+}
+#endif // EXTENSION_HOMEASSISTANT
 
 #endif // MODE_STREAM

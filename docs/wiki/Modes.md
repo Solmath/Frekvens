@@ -4,15 +4,13 @@
 
 **Games:** [Breakout clock](#-breakout-clock) | [Game of life](#-game-of-life) | [Ping-pong](#-ping-pong)| [Snake](#-snake)
 
-**IKEA Frekvens:** [Arrow](#️-arrow) | [Blinds](#-blinds) | [Equalizer](#-equalizer) | [Jagged Waveform](#-jagged-waveform) | [Ring](#-ring) | [Smooth waveform](#️-smooth-waveform)
+**IKEA Frekvens:** [Arrow](#️-arrow) | [Blinds](#-blinds) | [Equalizer](#-equalizer) | [Ring](#-ring) | [Waveform](#-waveform)
 
 **IKEA Obegränsad:** [Circle](#-circle) | [Lines](#-lines) | [Noise](#-noise) | [Rain](#-rain) | [Scan](#-scan) | [Stars](#-stars)
 
 **Interactive:** [Animation](#-animation) | [Countdown](#-countdown) | [Draw](#-draw) | [Flies](#-flies) | [Ticker](#🅰%EF%B8%8F-ticker)
 
-**Smart-home:** [Home Assistant Weather](#-home-assistant-weather) | [Home Thermometer](#️-home-thermometer) | [Stream](#-stream)
-
-**Weather:** [Google Weather](%EF%B8%8F-google-weather) | [Home Assistant Weather](#-home-assistant-weather) | [Open Meteo](#-open-meteo) | [Open Weather](#️-open-weather) | [World Weather Online](#-world-weather-online) | [Wttr.in](#️-wttrin) | [Yr](#️-yr)
+**Smart-home:** [Home Thermometer](#️-home-thermometer) | [Stream](#-stream) | [Weather](#-weather)
 
 **Miscellaneous:** [Blink](#️-blink) | [Bright](#-bright) | [Firework](#-firework) | [Glitter](#-glitter) | [Leaf fall](#-leaf-fall) | [Metaballs](#-metaballs) | [Pixel sequence](#-pixel-sequence) | [Waveform](#-waveform)
 
@@ -98,6 +96,9 @@ See also [Bright](#-bright).
 ## 💥 Breakout clock
 
 Inspired by the classic breakout game.
+
+> [!TIP]
+> The [Microphone](https://github.com/VIPnytt/Frekvens/wiki/Extensions#%EF%B8%8F-microphone) extension can be used to play/pause the game.
 
 Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
 
@@ -224,6 +225,9 @@ MODE_FLIES='true'
 
 Inspired by Conway’s *Game of Life*. Comes with an optional clock.
 
+> [!TIP]
+> The [Microphone](https://github.com/VIPnytt/Frekvens/wiki/Extensions#%EF%B8%8F-microphone) extension can be used to play/pause the game.
+
 Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
 
 ```ini
@@ -232,63 +236,16 @@ MODE_GAMEOFLIFE='true'
 
 ## ✨ Glitter
 
-Inspired by *snow* on old analog TVs.
+Inspired by snow on old analog TVs.
+
+> [!TIP]
+> The [Microphone](https://github.com/VIPnytt/Frekvens/wiki/Extensions#%EF%B8%8F-microphone) extension can be used to play/pause glittering.
 
 Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
 
 ```ini
 MODE_GLITTER='true'
 ```
-
-## ☁️ Google Weather
-
-Weather service.
-
-Updated every 15 minutes.
-
-Requires a [API-key](https://developers.google.com/maps/documentation/weather/get-api-key), set using the `GOOGLEWEATHER_KEY` variable.
-
-Configure in [secrets.h](https://github.com/VIPnytt/Frekvens/blob/main/firmware/include/config/secrets.h):
-
-```h
-#define GOOGLEWEATHER_KEY "secret"
-```
-
-Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
-
-```ini
-MODE_GOOGLEWEATHER='true'
-```
-
-> [!NOTE]
-> Location coordinates, `LATITUDE` and `LONGITUDE` are required.
-
-## 🏡 Home Assistant weather
-
-Smart-home integration
-
-Requires an [Long-lived access token](https://my.home-assistant.io/redirect/profile_security/), set using the `HOMEASSISTANT_KEY` variable. Other variables are optional.
-
-Configure in [secrets.h](https://github.com/VIPnytt/Frekvens/blob/main/firmware/include/config/secrets.h):
-
-```h
-#define HOMEASSISTANT_KEY "secret"
-```
-
-```h
-#define HOMEASSISTANT_PROTOCOL "http:"
-#define HOMEASSISTANT_HOST "homeassistant.local"
-#define HOMEASSISTANT_PORT 8123
-#define HOMEASSISTANT_ENTITY "weather.forecast_home"
-```
-
-Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
-
-```ini
-MODE_HOMEASSISTANT='true'
-```
-
-See also [Home Assistant](https://github.com/VIPnytt/Frekvens/wiki/Extensions#home-assistant) extension.
 
 ## 🌡️ Home thermometer
 
@@ -313,24 +270,12 @@ Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
 MODE_HOMETHERMOMETER='true'
 ```
 
-## 📈 Jagged waveform
-
-Inspired by the original *IKEA Frekvens* mode.
-
-> [!TIP]
-> The [Microphone](https://github.com/VIPnytt/Frekvens/wiki/Extensions#%EF%B8%8F-microphone) extension can be used to play/pause the waveforms, just like on a stock *IKEA Frekvens* device.
-
-Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
-
-```ini
-MODE_JAGGEDWAVEFORM='true'
-```
-
-See also [Smooth waveform](#%EF%B8%8F-smooth-waveform) and [Waveform](#-waveform).
-
 ## 🍂 Leaf fall
 
 Autumn-inspired.
+
+> [!TIP]
+> The [Microphone](https://github.com/VIPnytt/Frekvens/wiki/Extensions#%EF%B8%8F-microphone) extension can be used to play/pause spawning of new leaves.
 
 Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
 
@@ -370,57 +315,14 @@ MODE_METABALLS='true'
 
 Inspired by the original *IKEA Obegränsad* mode.
 
+> [!TIP]
+> The [Microphone](https://github.com/VIPnytt/Frekvens/wiki/Extensions#%EF%B8%8F-microphone) extension can be used to play/pause the noise.
+
 Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
 
 ```ini
 MODE_NOISE='true'
 ```
-
-## ⛅ Open-Meteo
-
-Weather service.
-
-Updated every 15+ minutes, depending on location.
-
-Commercial usage requires an [API-key](https://open-meteo.com/en/pricing), set using the `OPENMETEO_KEY` variable.
-
-Configure in [secrets.h](https://github.com/VIPnytt/Frekvens/blob/main/firmware/include/config/secrets.h):
-
-```h
-#define OPENMETEO_KEY "secret"
-```
-
-Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
-
-```ini
-MODE_OPENMETEO='true'
-```
-
-> [!NOTE]
-> Location coordinates, `LATITUDE` and `LONGITUDE` are required.
-
-## ☀️ Open Weather
-
-Weather service.
-
-Updated every 10 minutes.
-
-Requires a [API-key](https://openweathermap.org/api), set using the `OPENWEATHER_KEY` variable.
-
-Configure in [secrets.h](https://github.com/VIPnytt/Frekvens/blob/main/firmware/include/config/secrets.h):
-
-```h
-#define OPENWEATHER_KEY "secret"
-```
-
-Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
-
-```ini
-MODE_OPENWEATHER='true'
-```
-
-> [!NOTE]
-> Location coordinates, `LATITUDE` and `LONGITUDE` are required.
 
 ## 🏓 Ping-pong
 
@@ -485,21 +387,6 @@ MODE_SCAN='true'
 
 See also [Lines](#-lines).
 
-## 〰️ Smooth waveform
-
-Inspired by the original *IKEA Frekvens* mode.
-
-> [!TIP]
-> The [Microphone](https://github.com/VIPnytt/Frekvens/wiki/Extensions#%EF%B8%8F-microphone) extension can be used to play/pause the waveforms, just like on a stock *IKEA Frekvens* device.
-
-Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
-
-```ini
-MODE_SMOOTHWAVEFORM='true'
-```
-
-See also [Jagged waveform](#-jagged-waveform) and [Waveform](#-waveform).
-
 ## 🐍 Snake
 
 Inspired by the classic snake-game. Comes with an optional clock.
@@ -513,6 +400,9 @@ MODE_SNAKE='true'
 ## ⭐ Stars
 
 Inspired by the original *IKEA Obegränsad* mode.
+
+> [!TIP]
+> The [Microphone](https://github.com/VIPnytt/Frekvens/wiki/Extensions#%EF%B8%8F-microphone) extension can be used to play/pause spawning of new stars.
 
 Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
 
@@ -551,6 +441,9 @@ Rolling text.
 
 Use the [Web app](https://github.com/VIPnytt/Frekvens/wiki/Extensions#-web-app) to set a message, or automate it via [Home Assistant](https://github.com/VIPnytt/Frekvens/wiki/Extensions#-home-assistant).
 
+> [!TIP]
+> The [Microphone](https://github.com/VIPnytt/Frekvens/wiki/Extensions#%EF%B8%8F-microphone) extension can be used to play/pause the rolling text.
+
 API payload example:
 
 ```json
@@ -581,65 +474,34 @@ Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
 MODE_WAVEFORM='true'
 ```
 
-See also [Jagged waveform](#-jagged-waveform) and [Smooth waveform](#️-smooth-waveform).
+## ⛅ Weather
 
-## 🌍 World Weather Online
+Providers available:
 
-Weather service.
-
-Updated every 10-15 minutes.
-
-Order of precedence:
-
-- `LATITUDE` and `LONGITUDE`.
-- `LOCATION`
-
-Requires a [API-key](https://www.worldweatheronline.com/weather-api/api/docs/), set using the `WORLDWEATHERONLINE_KEY` variable.
+- [Google](https://github.com/VIPnytt/Frekvens/wiki/Weather#-google)
+- [Home Assistant](https://github.com/VIPnytt/Frekvens/wiki/Weather#-home-assistant)
+- [Open-Meteo](https://github.com/VIPnytt/Frekvens/wiki/Weather#-open-meteo)
+- [Open Weather](https://github.com/VIPnytt/Frekvens/wiki/Weather#-open-weather)
+- [Tomorrow.io](https://github.com/VIPnytt/Frekvens/wiki/Weather#-tomorrowio)
+- [World Weather Online](https://github.com/VIPnytt/Frekvens/wiki/Weather#-world-weather-online)
+- [Wttr.in](https://github.com/VIPnytt/Frekvens/wiki/Weather#-wttrin)
+- [Yr](https://github.com/VIPnytt/Frekvens/wiki/Weather#-yr)
 
 Configure in [secrets.h](https://github.com/VIPnytt/Frekvens/blob/main/firmware/include/config/secrets.h):
 
 ```h
-#define WORLDWEATHERONLINE_KEY "secret"
+#define LATITUDE "0.000"  // °
+#define LONGITUDE "0.000" // °
+#define LOCATION "city"
 ```
 
-Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
-
-```ini
-MODE_WORLDWEATHERONLINE='true'
-```
+To find your coordinates, use any preferred map or coordinate service, such as [LatLong.net](https://www.latlong.net/my-location-latitude-longitude), [GPS-Coordinates.net](https://www.gps-coordinates.net/my-location) or [GPS-Coordinates.org](https://gps-coordinates.org/my-location.php).
 
 > [!NOTE]
-> Location coordinates, `LATITUDE` and `LONGITUDE`, or a location name `LOCATION` is required.
-
-## ☀️ Wttr.in
-
-Weather service.
-
-Updated hourly.
-
-Order of precedence:
-
-- `LATITUDE` and `LONGITUDE`.
-- `LOCATION`
-- Auto-detect
+> Coordinates with 3-4 decimal places are usually more than accurate enough for weather data. Some providers also support a location name, usually in the form of a city or village.
 
 Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
 
 ```ini
-MODE_WTTRIN='true'
+MODE_WEATHER='true'
 ```
-
-## 🌧️ Yr
-
-Weather service.
-
-Denmark, Finland, Norway and Sweeden uses [Nowcast](https://api.met.no/weatherapi/nowcast/2.0/documentation), which is updated every 5 minutes. The rest of the world uses [Location Forecast](https://api.met.no/weatherapi/locationforecast/2.0/documentation).
-
-Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
-
-```ini
-MODE_YR='true'
-```
-
-> [!NOTE]
-> Location coordinates, `LATITUDE` and `LONGITUDE` are required.

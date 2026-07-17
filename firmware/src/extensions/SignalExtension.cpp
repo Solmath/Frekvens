@@ -7,36 +7,35 @@
 #include "services/DisplayService.h"
 #include "services/ModesService.h"
 
-#include <Preferences.h>
-
-SignalExtension *Signal = nullptr; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
-
-SignalExtension::SignalExtension() : ExtensionModule("Signal") { Signal = this; }
+#include <nvs.h>
+#include <span>
 
 void SignalExtension::begin()
 {
-    Preferences Storage;
-    Storage.begin(name, true);
-    if (Storage.isKey("duration"))
+    nvs_handle_t handle{};
+    if (nvs_open(name.data(), nvs_open_mode_t::NVS_READONLY, &handle) == ESP_OK)
     {
-        duration = Storage.getUShort("duration");
+        uint8_t _duration{0U};
+        if (nvs_get_u8(handle, "duration", &_duration) == ESP_OK)
+        {
+            duration = _duration * 1'000U;
+        }
+        nvs_close(handle);
     }
-    Storage.end();
     transmit();
 }
 
 void SignalExtension::handle()
 {
-    if (Display.getPower() && millis() - lastMillis > 1'000 * duration)
+    if (Display.getPower() && millis() - lastMillis > duration)
     {
-        if (signals.size())
+        if (!signals.empty())
         {
             Modes.setActive(false);
             Display.getFrame(frame);
             active = true;
-
             Display.clearFrame();
-            BitmapHandler(signals.front()).draw();
+            BitmapHandler(std::span<const uint16_t>{signals.front()}).draw();
             signals.erase(signals.begin());
             lastMillis = millis();
             Display.flush();
@@ -55,13 +54,17 @@ void SignalExtension::handle()
 
 void SignalExtension::setDuration(uint8_t seconds)
 {
-    if (seconds != duration)
+    const uint32_t _duration{seconds * 1'000U};
+    if (_duration != duration && _duration != 0U)
     {
-        duration = seconds;
-        Preferences Storage;
-        Storage.begin(name);
-        Storage.putUShort("duration", duration);
-        Storage.end();
+        duration = _duration;
+        nvs_handle_t handle{};
+        if (nvs_open(name.data(), nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
+        {
+            nvs_set_u8(handle, "duration", seconds);
+            nvs_commit(handle);
+            nvs_close(handle);
+        }
         transmit();
     }
 }
@@ -69,12 +72,12 @@ void SignalExtension::setDuration(uint8_t seconds)
 void SignalExtension::transmit()
 {
     JsonDocument doc; // NOLINT(misc-const-correctness)
-    doc["duration"].set(duration);
+    doc["duration"].set(duration / 1'000U);
     Device.transmit(doc.as<JsonObjectConst>(), name);
 }
 
 void SignalExtension::onReceive(JsonObjectConst payload,
-                                const char *source) // NOLINT(misc-unused-parameters)
+                                std::string_view source) // NOLINT(misc-unused-parameters)
 {
     // Duration
     if (payload["duration"].is<uint8_t>())
@@ -100,7 +103,7 @@ void SignalExtension::onReceive(JsonObjectConst payload,
             }
         }
         signals.push_back(sign);
-        ESP_LOGD(name, "received");
+        ESP_LOGD("Queue", "received"); // NOLINT(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
     }
 }
 

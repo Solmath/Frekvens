@@ -2,158 +2,40 @@
 
 #include "modes/ClockMode.h"
 
-#include "config/constants.h" // NOLINT(misc-include-cleaner)
-#include "extensions/HomeAssistantExtension.h"
-#include "fonts/MediumBoldFont.h"
-#include "fonts/MediumFont.h"
-#include "fonts/MiniFont.h"
+#include "extensions/HomeAssistantExtension.h" // NOLINT(misc-include-cleaner)
 #include "handlers/TextHandler.h"
 #include "services/DeviceService.h"
 #include "services/DisplayService.h"
-#include "services/FontsService.h"
+#include "services/FontsService.h" // NOLINT(misc-include-cleaner)
 
-#include <Preferences.h>
+#include <nvs.h>
 
-void ClockMode::borderPixel(uint8_t sec, uint8_t brightness) // NOLINT(bugprone-easily-swappable-parameters)
-{
-    // Segment boundaries (number of steps in each segment)
-    static constexpr uint8_t SEG1 = GRID_COLUMNS / 2U;        // top-right half
-    static constexpr uint8_t SEG2 = SEG1 + GRID_ROWS - 1U;    // right edge (y 1..GRID_ROWS-1)
-    static constexpr uint8_t SEG3 = SEG2 + GRID_COLUMNS - 1U; // bottom edge (x GRID_COLUMNS-2..0)
-    static constexpr uint8_t SEG4 = SEG3 + GRID_ROWS - 1U;    // left edge (y GRID_ROWS-2..0)
-    // remaining [SEG4,60): top-left half (x 1..GRID_COLUMNS/2-1)
-
-    uint8_t x = 0;
-    uint8_t y = 0;
-
-    if (sec < SEG1)
-    {
-        x = (GRID_COLUMNS / 2U) + sec;
-        y = 0U;
-    }
-    else if (sec < SEG2)
-    {
-        x = GRID_COLUMNS - 1U;
-        y = sec - (GRID_COLUMNS / 2U) + 1U;
-    }
-    else if (sec < SEG3)
-    {
-        x = SEG2 + GRID_COLUMNS - 2U - sec;
-        y = GRID_ROWS - 1U;
-    }
-    else if (sec < SEG4)
-    {
-        x = 0U;
-        y = SEG3 + GRID_ROWS - 2U - sec;
-    }
-    else
-    {
-        x = sec - SEG4 + 1U;
-        y = 0U;
-    }
-
-    Display.setPixel(x, y, brightness);
-}
+static_assert(GRID_COLUMNS >= 16U, __STRING(MODE_CLOCK) " is not compatible with this device's display size.");
+static_assert(GRID_ROWS >= 16U, __STRING(MODE_CLOCK) " is not compatible with this device's display size.");
 
 void ClockMode::configure()
 {
-    fonts = {
-        FontMini,
-        FontMedium,
-        FontMediumBold,
-    };
-
-    Preferences Storage;
-    Storage.begin(name, true);
-    if (Storage.isKey("ticking"))
+    nvs_handle_t handle{};
+    if (nvs_open(name.data(), nvs_open_mode_t::NVS_READONLY, &handle) == ESP_OK)
     {
-        ticking = Storage.getBool("ticking");
-    }
-    if (Storage.isKey("font"))
-    {
-        const String _font = Storage.getString("font");
-        Storage.end();
-        setFont(_font.c_str());
-    }
-    else
-    {
-        Storage.end();
-    }
-    if (font == nullptr)
-    {
-        font = FontMediumBold;
-        cellSize = TextHandler("0", font).getHeight();
-    }
-
-#if EXTENSION_HOMEASSISTANT
-    const std::string topic{std::string("frekvens/" HOSTNAME "/").append(name)};
-    {
-        const std::string id{std::string(name).append("_font")};
-        JsonObject component{(*HomeAssistant->discovery)[HomeAssistantAbbreviations::components][id].to<JsonObject>()};
-        component[HomeAssistantAbbreviations::command_template].set(R"({"font":"{{value}}"})");
-        component[HomeAssistantAbbreviations::command_topic].set(topic + "/set");
-        component[HomeAssistantAbbreviations::enabled_by_default].set(false);
-        component[HomeAssistantAbbreviations::entity_category].set("config");
-        component[HomeAssistantAbbreviations::icon].set("mdi:format-font");
-        component[HomeAssistantAbbreviations::name].set(std::string(name).append(" font"));
-        component[HomeAssistantAbbreviations::object_id].set(HOSTNAME "_" + id);
-        JsonArray options{component[HomeAssistantAbbreviations::options].to<JsonArray>()};
-        for (const FontModule *_font : fonts)
+        std::array<char, FontsService::namesMaxLength + 1U> _fontName{};
+        size_t length{_fontName.size()}; // NOLINT(cppcoreguidelines-init-variables)
+        if (nvs_get_str(handle, "font", _fontName.data(), &length) == ESP_OK &&
+            std::ranges::find(fontNames, std::string_view{_fontName.data(), length - 1U}) != fontNames.end())
         {
-            options.add(_font->name);
+            fontName.assign(_fontName.data(), length - 1U);
         }
-        component[HomeAssistantAbbreviations::platform].set("select");
-        component[HomeAssistantAbbreviations::state_topic].set(topic);
-        component[HomeAssistantAbbreviations::unique_id].set(HomeAssistant->uniquePrefix + id);
-        component[HomeAssistantAbbreviations::value_template].set("{{value_json.font}}");
+        uint8_t _ticking{0U};
+        if (nvs_get_u8(handle, "ticking", &_ticking) == ESP_OK)
+        {
+            ticking = static_cast<bool>(_ticking);
+        }
+        nvs_close(handle);
     }
-    {
-        const std::string id{std::string(name).append("_ticking")};
-        JsonObject component{(*HomeAssistant->discovery)[HomeAssistantAbbreviations::components][id].to<JsonObject>()};
-        component[HomeAssistantAbbreviations::command_template].set(R"({"ticking":{{value}}})");
-        component[HomeAssistantAbbreviations::command_topic].set(topic + "/set");
-        component[HomeAssistantAbbreviations::enabled_by_default].set(false);
-        component[HomeAssistantAbbreviations::entity_category].set("config");
-        component[HomeAssistantAbbreviations::icon].set("mdi:progress-clock");
-        component[HomeAssistantAbbreviations::name].set(std::string(name).append(" ticking"));
-        component[HomeAssistantAbbreviations::object_id].set(HOSTNAME "_" + id);
-        component[HomeAssistantAbbreviations::payload_off].set("false");
-        component[HomeAssistantAbbreviations::payload_on].set("true");
-        component[HomeAssistantAbbreviations::platform].set("switch");
-        component[HomeAssistantAbbreviations::state_off].set("False");
-        component[HomeAssistantAbbreviations::state_on].set("True");
-        component[HomeAssistantAbbreviations::state_topic].set(topic);
-        component[HomeAssistantAbbreviations::unique_id].set(HomeAssistant->uniquePrefix + id);
-        component[HomeAssistantAbbreviations::value_template].set("{{value_json.ticking}}");
-    }
-#endif // EXTENSION_HOMEASSISTANT
-
     transmit();
 }
 
 void ClockMode::begin() { pending = true; }
-
-void ClockMode::drawDigits()
-{
-    Display.clearFrame();
-
-    TextHandler hh1(std::to_string(hour / 10), font);
-    TextHandler hh2(std::to_string(hour % 10), font);
-    TextHandler mm1(std::to_string(minute / 10), font);
-    TextHandler mm2(std::to_string(minute % 10), font);
-
-    // Small font: digits flush to the center gap (no cell padding).
-    // Large font: digits centred in a cellSize-wide cell on each side of the gap.
-    const int8_t yTop = (GRID_ROWS / 2) - 1 - cellSize;
-    const int8_t yBot = (cellSize <= 5) ? (GRID_ROWS / 2) : (GRID_ROWS / 2) + 1;
-
-    auto xPad = [this](uint8_t w) -> int8_t { return (cellSize <= 5) ? 0 : (cellSize - w) / 2; };
-
-    hh1.draw((GRID_COLUMNS / 2) - 1 - xPad(hh1.getWidth()) - hh1.getWidth(), yTop);
-    hh2.draw((GRID_COLUMNS / 2) + 1 + xPad(hh2.getWidth()), yTop);
-    mm1.draw((GRID_COLUMNS / 2) - 1 - xPad(mm1.getWidth()) - mm1.getWidth(), yBot);
-    mm2.draw((GRID_COLUMNS / 2) + 1 + xPad(mm2.getWidth()), yBot);
-}
 
 void ClockMode::handle()
 {
@@ -163,90 +45,117 @@ void ClockMode::handle()
         {
             hour = local.tm_hour;
             minute = local.tm_min;
-            drawDigits();
+#if CLOCK_12H
+            const int hour{(local.tm_hour + 11) % 12 + 1};
+#endif // CLOCK_12H
+            const std::unique_ptr<const FontModule> font{Fonts.get(fontName)};
+            const TextHandler hh1(std::to_string(hour / 10), *font);
+            const TextHandler hh2(std::to_string(hour % 10), *font);
+            const TextHandler mm1(std::to_string(minute / 10), *font);
+            const TextHandler mm2(std::to_string(minute % 10), *font);
+            const uint8_t fontWidth{max({hh1.getWidth(), hh2.getWidth(), mm1.getWidth(), mm2.getWidth()})};
+            strikethrough = mm2.getHeight() > 6U;
+            Display.clearFrame();
+            hh1.draw(static_cast<int16_t>((GRID_COLUMNS / 2U) - 1U - fontWidth + ((fontWidth - hh1.getWidth()) / 2U)),
+                     static_cast<int8_t>((GRID_ROWS / 2U) - 1U - hh1.getHeight()));
+            hh2.draw(static_cast<int16_t>((GRID_COLUMNS / 2U) + 1U + ((fontWidth - hh2.getWidth()) / 2U)),
+                     static_cast<int8_t>((GRID_ROWS / 2U) - 1U - hh2.getHeight()));
+            mm1.draw(static_cast<int16_t>((GRID_COLUMNS / 2U) - 1U - fontWidth + ((fontWidth - mm1.getWidth()) / 2U)),
+                     static_cast<int8_t>((GRID_COLUMNS / 2U) + (strikethrough ? 1U : 0U)));
+            mm2.draw(static_cast<int16_t>((GRID_COLUMNS / 2U) + 1U + ((fontWidth - mm2.getWidth()) / 2U)),
+                     static_cast<int8_t>((GRID_COLUMNS / 2U) + (strikethrough ? 1U : 0U)));
             pending = false;
         }
         if (ticking && second != local.tm_sec)
         {
-            if (cellSize <= 5)
-            {
-                // Small font: sweep a pixel clockwise around the grid border
-                borderPixel(second, 0);
-                second = static_cast<uint8_t>(local.tm_sec);
-                borderPixel(second, INT8_MAX);
-            }
-            else
-            {
-                // Large font: move a pixel along the center gap between digit rows
-                Display.setPixel((GRID_COLUMNS / 2) - 8 + ((second + 2) / 4),
-                                 (second % 2) == 0 ? (GRID_ROWS / 2) - 1 : GRID_ROWS / 2,
-                                 0);
-                second = static_cast<uint8_t>(local.tm_sec);
-                Display.setPixel((GRID_COLUMNS / 2) - 8 + ((second + 2) / 4),
-                                 (second % 2) == 0 ? (GRID_ROWS / 2) - 1 : GRID_ROWS / 2,
-                                 INT8_MAX);
-            }
+            drawTicker(0U);
+            second = static_cast<uint8_t>(local.tm_sec);
+            drawTicker(INT8_MAX);
         }
     }
 }
 
-void ClockMode::setFont(const char *fontName)
+void ClockMode::drawTicker(uint8_t brightness) const
 {
-    if (font == nullptr || strcmp(font->name, fontName) != 0)
+    if (strikethrough)
     {
-        for (FontModule *_font : fonts)
+        Display.setPixel((GRID_COLUMNS / 2U) - (60U / 4U / 2U) - 1U + ((second + 2U) / 4U),
+                         (static_cast<unsigned>(second) & 1U) == 0U ? (GRID_ROWS / 2U) - 1U : GRID_ROWS / 2U,
+                         brightness);
+    }
+    else if (second < 8U)
+    {
+        Display.setPixel((GRID_COLUMNS / 2U) + second, (GRID_ROWS / 2U) - 8U, brightness);
+    }
+    else if (second < 8U + 15U)
+    {
+        Display.setPixel((GRID_COLUMNS / 2U) + 7U, (GRID_ROWS / 2U) - 15U + second, brightness);
+    }
+    else if (second < 8U + 30U)
+    {
+        Display.setPixel((GRID_COLUMNS / 2U) + 29U - second, (GRID_ROWS / 2U) + 7U, brightness);
+    }
+    else if (second < 8U + 45U)
+    {
+        Display.setPixel((GRID_COLUMNS / 2U) - 8U, (GRID_ROWS / 2U) + 44U - second, brightness);
+    }
+    else
+    {
+        Display.setPixel((GRID_COLUMNS / 2U) - 60U + second, (GRID_ROWS / 2U) - 8U, brightness);
+    }
+}
+
+void ClockMode::setFont(std::string_view _fontName)
+{
+    if (std::ranges::find(FontsService::names, _fontName) != FontsService::names.end())
+    {
+        fontName = _fontName;
+        nvs_handle_t handle{};
+        if (nvs_open(name.data(), nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
         {
-            if (!strcmp(_font->name, fontName))
-            {
-                font = _font;
-                cellSize = TextHandler("0", font).getHeight();
-                Preferences Storage;
-                Storage.begin(name);
-                Storage.putString("font", font->name);
-                Storage.end();
-                pending = true;
-                transmit();
-                return;
-            }
+            nvs_set_str(handle, "font", fontName.c_str());
+            nvs_commit(handle);
+            nvs_close(handle);
         }
-        ESP_LOGD(name, "unsupported font %s", fontName); // NOLINT(cppcoreguidelines-avoid-do-while)
-    }
-}
-
-void ClockMode::setTicking(bool _ticking)
-{
-    if (_ticking != ticking)
-    {
-        ticking = _ticking;
-        Preferences Storage;
-        Storage.begin(name);
-        Storage.putBool("ticking", ticking);
-        Storage.end();
         pending = true;
         transmit();
     }
 }
 
+void ClockMode::setTicking(bool _ticking)
+{
+    ticking = _ticking;
+    nvs_handle_t handle{};
+    if (nvs_open(name.data(), nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
+    {
+        nvs_set_u8(handle, "ticking", static_cast<uint8_t>(ticking)); // NOLINT(readability-implicit-bool-conversion)
+        nvs_commit(handle);
+        nvs_close(handle);
+    }
+    pending = true;
+    transmit();
+}
+
 void ClockMode::transmit()
 {
     JsonDocument doc; // NOLINT(misc-const-correctness)
-    doc["font"].set(font->name);
+    doc["font"].set(fontName);
     JsonArray _fonts{doc["fonts"].to<JsonArray>()};
-    for (const FontModule *_font : fonts)
+    for (const std::string_view _font : fontNames)
     {
-        _fonts.add(_font->name);
+        _fonts.add(_font);
     }
     doc["ticking"].set(ticking);
     Device.transmit(doc.as<JsonObjectConst>(), name);
 }
 
 void ClockMode::onReceive(JsonObjectConst payload,
-                          const char *source) // NOLINT(misc-unused-parameters)
+                          std::string_view source) // NOLINT(misc-unused-parameters)
 {
     // Font
-    if (payload["font"].is<const char *>())
+    if (payload["font"].is<std::string_view>())
     {
-        setFont(payload["font"].as<const char *>());
+        setFont(payload["font"].as<std::string_view>());
     }
     // Ticking
     if (payload["ticking"].is<bool>())
@@ -254,5 +163,50 @@ void ClockMode::onReceive(JsonObjectConst payload,
         setTicking(payload["ticking"].as<bool>());
     }
 }
+
+#if EXTENSION_HOMEASSISTANT
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+void ClockMode::onHomeAssistant(JsonDocument &discovery, std::string topic, std::string unique)
+{
+    topic.append(name);
+    {
+        const std::string id{std::string(name).append("_font")};
+        JsonObject component{discovery[HomeAssistantAbbreviations::components][id].to<JsonObject>()};
+        component[HomeAssistantAbbreviations::command_template].set(R"({"font":"{{value}}"})");
+        component[HomeAssistantAbbreviations::command_topic].set(topic + "/set");
+        component[HomeAssistantAbbreviations::enabled_by_default].set(false);
+        component[HomeAssistantAbbreviations::entity_category].set("config");
+        component[HomeAssistantAbbreviations::icon].set("mdi:format-font");
+        component[HomeAssistantAbbreviations::name].set(std::string(name).append(" font"));
+        JsonArray options{component[HomeAssistantAbbreviations::options].to<JsonArray>()};
+        for (const std::string_view _font : fontNames)
+        {
+            options.add(_font);
+        }
+        component[HomeAssistantAbbreviations::platform].set("select");
+        component[HomeAssistantAbbreviations::state_topic].set(topic);
+        component[HomeAssistantAbbreviations::unique_id].set(unique + id);
+        component[HomeAssistantAbbreviations::value_template].set("{{value_json.font}}");
+    }
+    {
+        const std::string id{std::string(name).append("_ticking")};
+        JsonObject component{discovery[HomeAssistantAbbreviations::components][id].to<JsonObject>()};
+        component[HomeAssistantAbbreviations::command_template].set(R"({"ticking":{{value}}})");
+        component[HomeAssistantAbbreviations::command_topic].set(topic + "/set");
+        component[HomeAssistantAbbreviations::enabled_by_default].set(false);
+        component[HomeAssistantAbbreviations::entity_category].set("config");
+        component[HomeAssistantAbbreviations::icon].set("mdi:progress-clock");
+        component[HomeAssistantAbbreviations::name].set(std::string(name).append(" second indicator"));
+        component[HomeAssistantAbbreviations::payload_off].set("false");
+        component[HomeAssistantAbbreviations::payload_on].set("true");
+        component[HomeAssistantAbbreviations::platform].set("switch");
+        component[HomeAssistantAbbreviations::state_off].set("False");
+        component[HomeAssistantAbbreviations::state_on].set("True");
+        component[HomeAssistantAbbreviations::state_topic].set(topic);
+        component[HomeAssistantAbbreviations::unique_id].set(unique + id);
+        component[HomeAssistantAbbreviations::value_template].set("{{value_json.ticking}}");
+    }
+}
+#endif // EXTENSION_HOMEASSISTANT
 
 #endif // MODE_CLOCK

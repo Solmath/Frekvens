@@ -3,6 +3,7 @@ import { type Component, createSignal } from "solid-js";
 
 import { Icon } from "../components/Icon";
 import { Tooltip } from "../components/Tooltip";
+import { TEMPERATURE_UNIT } from "../config/constants";
 import { EXTENSION_HOMEASSISTANT, EXTENSION_MQTT, EXTENSION_RESTFUL } from "../config/modules";
 import { name as ExtensionHomeAssistantName } from "../extensions/HomeAssistant";
 import { name as ExtensionMqttName, MqttTopic } from "../extensions/Mqtt";
@@ -12,8 +13,8 @@ import { MainComponent as ModesMainComponent, name as ModesName } from "../servi
 
 export const name = "Home thermometer";
 
-const [getIndoor, setIndoor] = createSignal<number>(0);
-const [getOutdoor, setOutdoor] = createSignal<number>(0);
+const [getIndoor, setIndoor] = createSignal<number | undefined>(undefined);
+const [getOutdoor, setOutdoor] = createSignal<number | undefined>(undefined);
 
 export const receiver = (json: { indoor?: number; outdoor?: number }) => {
     json?.indoor !== undefined && setIndoor(json.indoor);
@@ -24,7 +25,11 @@ export const Main: Component = () => (
     <ModesMainComponent
         icon={mdiHomeThermometer}
         internal={true}
-        text="Smart-home integration"
+        text={
+            getIndoor() === undefined || getOutdoor() === undefined
+                ? "Smart-home integration"
+                : `${getIndoor()}${TEMPERATURE_UNIT || "°"} / ${getOutdoor()}${TEMPERATURE_UNIT || "°"}`
+        }
     />
 );
 
@@ -44,8 +49,27 @@ export const Link: Component = () => (
 );
 
 export const MainSecondary: Component = () => {
-    const payload = `{"indoor": ${getIndoor()}, "outdoor": ${getOutdoor()}}`;
-    const payloadAlt = `{"${name}": ${payload}}`;
+    const fallback = (() => {
+        switch (TEMPERATURE_UNIT) {
+            case "°C":
+                return {
+                    indoor: 20,
+                    outdoor: 10,
+                };
+            case "°F":
+                return {
+                    indoor: 70,
+                    outdoor: 50,
+                };
+            default: // °K
+                return {
+                    indoor: 295,
+                    outdoor: 280,
+                };
+        }
+    })();
+
+    const payload = `{"indoor": ${getIndoor() ?? fallback.indoor}, "outdoor": ${getOutdoor() ?? fallback.outdoor}}`;
 
     return (
         <div class="main">
@@ -56,6 +80,7 @@ export const MainSecondary: Component = () => {
                         <div class="text-sm mb-3">
                             <a
                                 href={`https://github.com/VIPnytt/Frekvens/wiki/${ModesName}#-${name.toLowerCase().replace(/\s+/g, "-")}`}
+                                rel="noopener"
                                 target="_blank"
                             >
                                 Get started by configuring your <span class="italic">smart-home system</span> to send
@@ -67,7 +92,7 @@ export const MainSecondary: Component = () => {
                                 <div class="border-t" />
                                 <h3>{ExtensionHomeAssistantName}</h3>
                                 <div class="text-sm">
-                                    <span class="font-medium ">Automation:</span>{" "}
+                                    <span class="font-medium">Automation:</span>{" "}
                                     <span class="text-content-alt-light dark:text-content-alt-dark">
                                         Set up in the user-interface.
                                     </span>
@@ -79,12 +104,12 @@ export const MainSecondary: Component = () => {
                                 <div class="border-t" />
                                 <h3>{ExtensionMqttName}</h3>
                                 <div class="text-sm">
-                                    <span class="font-medium ">Topic:</span>{" "}
+                                    <span class="font-medium">Topic:</span>{" "}
                                     <span class="text-content-alt-light dark:text-content-alt-dark font-mono whitespace-nowrap">
                                         {MqttTopic}/set
                                     </span>
                                     <br />
-                                    <span class="font-medium ">Message:</span>{" "}
+                                    <span class="font-medium">Message:</span>{" "}
                                     <span class="text-content-alt-light dark:text-content-alt-dark font-mono whitespace-nowrap">
                                         {payload}
                                     </span>
@@ -96,14 +121,17 @@ export const MainSecondary: Component = () => {
                                 <div class="border-t" />
                                 <h3>{ExtensionRestfulName}</h3>
                                 <div class="text-sm">
-                                    <span class="font-medium ">Method:</span> <span class="font-mono">PATCH</span>
+                                    <span class="font-medium">Method:</span>{" "}
+                                    <span class="text-content-alt-light dark:text-content-alt-dark font-mono">
+                                        PATCH
+                                    </span>
                                     <br />
-                                    <span class="font-medium ">URL:</span>{" "}
+                                    <span class="font-medium">URL:</span>{" "}
                                     <span class="text-content-alt-light dark:text-content-alt-dark font-mono">
                                         {RestfulUrl + encodeURIComponent(name)}
                                     </span>
                                     <br />
-                                    <span class="font-medium ">Body:</span>{" "}
+                                    <span class="font-medium">Body:</span>{" "}
                                     <span class="text-content-alt-light dark:text-content-alt-dark font-mono whitespace-nowrap">
                                         {payload}
                                     </span>
@@ -113,14 +141,14 @@ export const MainSecondary: Component = () => {
                         <div class="border-t" />
                         <h3>{ExtensionWebSocketName}</h3>
                         <div class="text-sm">
-                            <span class="font-medium ">URL:</span>{" "}
+                            <span class="font-medium">URL:</span>{" "}
                             <span class="text-content-alt-light dark:text-content-alt-dark font-mono">
                                 {WebSocketUrl}
                             </span>
                             <br />
-                            <span class="font-medium ">Message:</span>{" "}
+                            <span class="font-medium">Message:</span>{" "}
                             <span class="text-content-alt-light dark:text-content-alt-dark font-mono whitespace-nowrap">
-                                {payloadAlt}
+                                {`{"${name}": ${payload}}`}
                             </span>
                         </div>
                     </div>

@@ -9,18 +9,15 @@ import { Tooltip } from "./Tooltip";
 
 const [getStrength, setStrength] = createSignal<number>(2 ** 8 - 1);
 
-export const Strength: Component = () => (
-    <div class="flex items-center mt-3">
-        <Icon
-            class="mr-2"
-            path={mdiBrightness6}
-        />
+export const StrengthComponent: Component = () => (
+    <div class="action grid-cols-[--spacing(4)_1fr]">
+        <Icon path={mdiBrightness6} />
         <Tooltip text={`Brush brightness ${Math.ceil((getStrength() / (2 ** 8 - 1)) * 100)} %`}>
             <input
                 class="w-full"
                 max={2 ** 8 - 1}
                 min="1"
-                onInput={(e) => setStrength(parseFloat(e.currentTarget.value))}
+                onInput={(e) => setStrength(e.currentTarget.valueAsNumber)}
                 type="range"
                 value={getStrength()}
             />
@@ -200,7 +197,7 @@ export const Canvas: Component<{
 
     return (
         <div
-            class={`bg-black flex-none inline-block max-h-[calc((100vh---spacing(32))*0.9)] mx-auto p-2.5 relative shrink-0 w-full ${WebAppSidebar() ? "max-w-[calc((100vw---spacing(80))*0.9)]" : "max-w-[90vw]"}`}
+            class={`bg-black flex-none inline-block max-h-[calc((100vh-(--spacing(32)))*0.9)] mx-auto p-2.5 relative shrink-0 w-full ${WebAppSidebar() ? "max-w-[calc((100vw-(--spacing(80)))*0.9)]" : "max-w-[90vw]"}`}
             ref={(div) => {
                 divRef = div;
             }}

@@ -1,24 +1,33 @@
+#if FONT_LARGE
+
 #include "fonts/LargeFont.h"
 
-LargeFont *FontLarge = nullptr; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+#include "config/constants.h" // NOLINT(misc-include-cleaner)
 
-LargeFont::LargeFont() : FontModule("Large") { FontLarge = this; }
+static_assert(GRID_COLUMNS >= 8U, __STRING(FONT_LARGE) " is not compatible with this device's display size.");
+static_assert(GRID_ROWS >= 8U, __STRING(FONT_LARGE) " is not compatible with this device's display size.");
 
-FontModule::Symbol LargeFont::getChar(uint32_t character) const
+FontModule::Symbol LargeFont::getChar(char32_t character) const
 {
-    if (character >= 0x20 && character <= 0x7F && character < ascii.size() + 0x20)
+    // NOLINTBEGIN(bugprone-branch-clone)
+    switch (character)
     {
-        return ascii[character - 0x20];
+    case ' ': // U+0020 SPACE
+        return whitespace(6U);
+    case '!': // U+0021 EXCLAMATION MARK
+        return toSymbol(exclamationMark);
+    case 'I': // U+0049 LATIN CAPITAL LETTER I
+        return toSymbol(latinCapitalLetterI);
+    case 'R': // U+0052 LATIN CAPITAL LETTER R
+        return toSymbol(latinCapitalLetterR);
+    case 'U': // U+0055 LATIN CAPITAL LETTER U
+        return toSymbol(latinCapitalLetterU);
+    case U'π': // U+03C0 GREEK SMALL LETTER PI
+        return toSymbol(greekSmallLetterPi);
+    default:
+        return {};
     }
-    else if (character >= 0x80 && character <= 0x10FFFF)
-    {
-        for (const SymbolExtended &extended : unicode)
-        {
-            if (extended.hex == character)
-            {
-                return extended.symbol;
-            }
-        }
-    }
-    return {};
+    // NOLINTEND(bugprone-branch-clone)
 }
+
+#endif // FONT_LARGE

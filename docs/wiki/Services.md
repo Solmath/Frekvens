@@ -1,25 +1,15 @@
 # ⚙️ Services
 
-[Connectivity](#-connectivity) | [Device](#️-device) | [Display](#-display) | [Modes](#️-modes) | [Web server](#️-web-server)
+[Connectivity](#-connectivity) | [Device](#️-device) | [Display](#-display) | [Temperature](#%EF%B8%8F-temperature) | [Time](#-time)
 
 ## 🌐 Connectivity
 
 **Hostname:**
 
-Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
+Defaults to device name if not set. Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
 
 ```ini
-HOSTNAME='frekvens'
-```
-
-**Time zone:**
-
-Time zone in IANA format, eg. `America/New_York`, `Asia/Shanghai` or `Europe/London`.
-
-Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
-
-```ini
-TIME_ZONE='Etc/Universal'
+HOSTNAME='frekvens' # optional
 ```
 
 **Wi-Fi client:**
@@ -45,7 +35,7 @@ Regulatory country code in *ISO 3166-1 alpha-2* format.
 Configure in [secrets.h](https://github.com/VIPnytt/Frekvens/blob/main/firmware/include/config/secrets.h):
 
 ```h
-#define WIFI_COUNTRY "01"
+#define WIFI_COUNTRY "01" // ISO 3166-1 alpha-2
 ```
 
 > [!NOTE]
@@ -55,10 +45,10 @@ Configure in [secrets.h](https://github.com/VIPnytt/Frekvens/blob/main/firmware/
 
 **Name:**
 
-Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
+Defaults to device model name if not set. Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
 
 ```ini
-NAME='Frekvens'
+NAME='Frekvens' # optional
 ```
 
 **Power off:**
@@ -101,46 +91,54 @@ API payload example:
 
 **Frame rate:**
 
-Configure in [secrets.h](https://github.com/VIPnytt/Frekvens/blob/main/firmware/include/config/secrets.h):
+The frame rate is automatically scaled based on the ESP32 variant's CPU frequency. While this ranges from 120 fps (400 MHz) down to 36 fps (120 MHz), most common variants running at 240 MHz will result in 72 fps.
+
+To manually set a fixed frame rate, define it in [secrets.h](https://github.com/VIPnytt/Frekvens/blob/main/firmware/include/config/secrets.h):
 
 ```h
-#define FRAME_RATE 60 // fps
+#define FRAME_RATE 72 // fps
 ```
 
-## 🎛️ Modes
+**PWM bit depth:**
 
-**Weather:**
+To maximize visual quality, the bit depth is dynamically balanced against the frame rate. Higher frame rates favor fluid motion with lower bit depth (e.g. 8-bit at 120 fps), while lower frame rates allow for greater brightness control (e.g. 15-bit at 24 fps). For the common 72 fps configuration, this results in a 10-bit depth by default.
 
-Configure in [secrets.h](https://github.com/VIPnytt/Frekvens/blob/main/firmware/include/config/secrets.h):
+To manually lock the bit depth, define it in [secrets.h](https://github.com/VIPnytt/Frekvens/blob/main/firmware/include/config/secrets.h):
 
 ```h
-#define LATITUDE "0.000"  // coordinate
-#define LONGITUDE "0.000" // coordinate
+#define PWM_DEPTH 10 // bit
 ```
 
-> [!NOTE]
-> Some providers have resolution grid sizes down to 250 m (820 ft), which means 3-4 decimals should be provided for the most accurate weather reports.
+## 🌡️ Temperature
 
-A small list of providers also supports location, usually in the form of a city or village.
+**Unit:**
 
-Configure in [secrets.h](https://github.com/VIPnytt/Frekvens/blob/main/firmware/include/config/secrets.h):
+Temperature unit in either Celsius, Fahrenheit or Kelvin.
 
-```h
-#define LOCATION "city"
+Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
+
+```ini
+TEMPERATURE_UNIT='°C' # °C, °F or °K
 ```
 
-Some also require an temperature unit.
+## ⌚ Time
 
-Configure in [secrets.h](https://github.com/VIPnytt/Frekvens/blob/main/firmware/include/config/secrets.h):
+**Clock format:**
 
-```h
-#define TEMPERATURE_CELSIUS true // °C
+Whether to use 12-hour or 24-hour format.
+
+Auto-detected if not set. Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
+
+```ini
+CLOCK_FORMAT='12' # hours
 ```
 
-```h
-#define TEMPERATURE_FAHRENHEIT true // °F
-```
+**Time zone:**
 
-```h
-#define TEMPERATURE_KELVIN true // °K
+Time zone in IANA format, eg. `America/New_York`, `Asia/Shanghai` or `Europe/London`.
+
+Auto-detected if not set. Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
+
+```ini
+TIME_ZONE='Etc/Universal' # IANA
 ```

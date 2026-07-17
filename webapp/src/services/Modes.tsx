@@ -20,30 +20,22 @@ import {
     MODE_FLIES,
     MODE_GAMEOFLIFE,
     MODE_GLITTER,
-    MODE_GOOGLEWEATHER,
-    MODE_HOMEASSISTANTWEATHER,
     MODE_HOMETHERMOMETER,
-    MODE_JAGGEDWAVEFORM,
     MODE_LEAFFALL,
     MODE_LINES,
     MODE_METABALLS,
     MODE_NOISE,
-    MODE_OPENMETEO,
-    MODE_OPENWEATHER,
     MODE_PINGPONG,
     MODE_PIXELSEQUENCE,
     MODE_RAIN,
     MODE_RING,
     MODE_SCAN,
-    MODE_SMOOTHWAVEFORM,
     MODE_SNAKE,
     MODE_STARS,
     MODE_STREAM,
     MODE_TICKER,
     MODE_WAVEFORM,
-    MODE_WORLDWEATHERONLINE,
-    MODE_WTTRIN,
-    MODE_YR,
+    MODE_WEATHER,
 } from "../config/modules";
 import { SidebarSection, SidebarSectionSecondary, Main as WebAppMain, WebAppPath } from "../extensions/WebApp";
 import { WebSocketWS } from "../extensions/WebSocket";
@@ -78,38 +70,27 @@ import {
     Sidebar as ModeGameOfLifeSidebar,
 } from "../modes/GameOfLife";
 import { Main as ModeGlitterMain, name as ModeGlitterName } from "../modes/Glitter";
-import { Main as ModeGoogleWeatherMain, name as ModeGoogleWeatherName } from "../modes/GoogleWeather";
-import {
-    Main as ModeHomeAssistantWeatherMain,
-    name as ModeHomeAssistantWeatherName,
-} from "../modes/HomeAssistantWeather";
 import {
     Link as ModeHomeThermometerLink,
     Main as ModeHomeThermometerMain,
     MainSecondary as ModeHomeThermometerMainThird,
     name as ModeHomeThermometerName,
 } from "../modes/HomeThermometer";
-import { Main as ModeJaggedWaveformMain, name as ModeJaggedWaveformName } from "../modes/JaggedWaveform";
 import { Main as ModeLeafFallMain, name as ModeLeafFallName } from "../modes/LeafFall";
 import { Main as ModeLinesMain, name as ModeLinesName } from "../modes/Lines";
 import { Main as ModeMetaballsMain, name as ModeMetaballsName } from "../modes/Metaballs";
 import { Main as ModeNoiseMain, name as ModeNoiseName } from "../modes/Noise";
-import { Main as ModeOpenMeteoMain, name as ModeOpenMeteoName } from "../modes/OpenMeteo";
-import { Main as ModeOpenWeatherMain, name as ModeOpenWeatherName } from "../modes/OpenWeather";
 import { Main as ModePingPongMain, name as ModePingPongName, Sidebar as ModePingPongSidebar } from "../modes/PingPong";
 import { Main as ModePixelSequenceMain, name as ModePixelSequenceName } from "../modes/PixelSequence";
 import { Main as ModeRainMain, name as ModeRainName } from "../modes/Rain";
 import { Main as ModeRingMain, name as ModeRingName } from "../modes/Ring";
 import { Main as ModeScanMain, name as ModeScanName } from "../modes/Scan";
-import { Main as ModeSmoothWaveformMain, name as ModeSmoothWaveformName } from "../modes/SmoothWaveform";
 import { Main as ModeSnakeMain, name as ModeSnakeName, Sidebar as ModeSnakeSidebar } from "../modes/Snake";
 import { Main as ModeStarsMain, name as ModeStarsName } from "../modes/Stars";
 import { Main as ModeStreamMain, name as ModeStreamName, Sidebar as ModeStreamSidebar } from "../modes/Stream";
 import { Main as ModeTickerMain, name as ModeTickerName, Sidebar as ModeTickerSidebar } from "../modes/Ticker";
-import { Main as ModeWaveformMain, name as ModeWaveformName } from "../modes/Waveform";
-import { Main as ModeWorldWeatherOnlineMain, name as ModeWorldWeatherOnlineName } from "../modes/WorldWeatherOnline";
-import { Main as ModeWttrInMain, name as ModeWttrInName } from "../modes/WttrIn";
-import { Main as ModeYrMain, name as ModeYrName } from "../modes/Yr";
+import { Main as ModeWaveformMain, name as ModeWaveformName, Sidebar as ModeWaveformSidebar } from "../modes/Waveform";
+import { Main as ModeWeatherMain, name as ModeWeatherName, Sidebar as ModeWeatherSidebar } from "../modes/Weather";
 import { DisplayPowerSet } from "./Display";
 
 export const name = "Modes";
@@ -212,24 +193,9 @@ export const Main: Component = () => (
                 <ModeGlitterMain />
             </Match>
         )}
-        {MODE_GOOGLEWEATHER && (
-            <Match when={getMode() === ModeGoogleWeatherName}>
-                <ModeGoogleWeatherMain />
-            </Match>
-        )}
-        {MODE_HOMEASSISTANTWEATHER && (
-            <Match when={getMode() === ModeHomeAssistantWeatherName}>
-                <ModeHomeAssistantWeatherMain />
-            </Match>
-        )}
         {MODE_HOMETHERMOMETER && (
             <Match when={getMode() === ModeHomeThermometerName}>
                 <ModeHomeThermometerMain />
-            </Match>
-        )}
-        {MODE_JAGGEDWAVEFORM && (
-            <Match when={getMode() === ModeJaggedWaveformName}>
-                <ModeJaggedWaveformMain />
             </Match>
         )}
         {MODE_LEAFFALL && (
@@ -250,16 +216,6 @@ export const Main: Component = () => (
         {MODE_NOISE && (
             <Match when={getMode() === ModeNoiseName}>
                 <ModeNoiseMain />
-            </Match>
-        )}
-        {MODE_OPENMETEO && (
-            <Match when={getMode() === ModeOpenMeteoName}>
-                <ModeOpenMeteoMain />
-            </Match>
-        )}
-        {MODE_OPENWEATHER && (
-            <Match when={getMode() === ModeOpenWeatherName}>
-                <ModeOpenWeatherMain />
             </Match>
         )}
         {MODE_PINGPONG && (
@@ -287,11 +243,6 @@ export const Main: Component = () => (
                 <ModeScanMain />
             </Match>
         )}
-        {MODE_SMOOTHWAVEFORM && (
-            <Match when={getMode() === ModeSmoothWaveformName}>
-                <ModeSmoothWaveformMain />
-            </Match>
-        )}
         {MODE_SNAKE && (
             <Match when={getMode() === ModeSnakeName}>
                 <ModeSnakeMain />
@@ -317,19 +268,9 @@ export const Main: Component = () => (
                 <ModeWaveformMain />
             </Match>
         )}
-        {MODE_WORLDWEATHERONLINE && (
-            <Match when={getMode() === ModeWorldWeatherOnlineName}>
-                <ModeWorldWeatherOnlineMain />
-            </Match>
-        )}
-        {MODE_WTTRIN && (
-            <Match when={getMode() === ModeWttrInName}>
-                <ModeWttrInMain />
-            </Match>
-        )}
-        {MODE_YR && (
-            <Match when={getMode() === ModeYrName}>
-                <ModeYrMain />
+        {MODE_WEATHER && (
+            <Match when={getMode() === ModeWeatherName}>
+                <ModeWeatherMain />
             </Match>
         )}
     </Switch>
@@ -351,19 +292,27 @@ export const Sidebar: Component = () => {
     return (
         <>
             <SidebarSection title="Mode">
-                <select
-                    class="w-full"
-                    name={name}
-                    onchange={(e) => handleMode(e.currentTarget.value)}
-                    value={getMode()}
-                >
-                    <For each={getModes()}>{(mode) => <option>{mode}</option>}</For>
-                </select>
+                <div class="action grid-cols-[--spacing(4)_1fr]">
+                    <Icon path={mdiDotsGrid} />
+                    <select
+                        class="w-full"
+                        name={name}
+                        onchange={(e) => handleMode(e.currentTarget.value)}
+                        value={getMode()}
+                    >
+                        <For each={getModes()}>{(mode) => <option>{mode}</option>}</For>
+                    </select>
+                </div>
             </SidebarSection>
             <Switch>
                 {MODE_ANIMATION && (
                     <Match when={getMode() === ModeAnimationName}>
                         <ModeAnimationSidebar />
+                    </Match>
+                )}
+                {MODE_CLOCK && (
+                    <Match when={getMode() === ModeClockName}>
+                        <ModeClockSidebar />
                     </Match>
                 )}
                 {MODE_COUNTDOWN && (
@@ -374,11 +323,6 @@ export const Sidebar: Component = () => {
                 {MODE_DRAW && (
                     <Match when={getMode() === ModeDrawName}>
                         <ModeDrawSidebar />
-                    </Match>
-                )}
-                {MODE_CLOCK && (
-                    <Match when={getMode() === ModeClockName}>
-                        <ModeClockSidebar />
                     </Match>
                 )}
                 {MODE_GAMEOFLIFE && (
@@ -404,6 +348,16 @@ export const Sidebar: Component = () => {
                 {MODE_TICKER && (
                     <Match when={getMode() === ModeTickerName}>
                         <ModeTickerSidebar />
+                    </Match>
+                )}
+                {MODE_WAVEFORM && (
+                    <Match when={getMode() === ModeWaveformName}>
+                        <ModeWaveformSidebar />
+                    </Match>
+                )}
+                {MODE_WEATHER && (
+                    <Match when={getMode() === ModeWeatherName}>
+                        <ModeWeatherSidebar />
                     </Match>
                 )}
             </Switch>

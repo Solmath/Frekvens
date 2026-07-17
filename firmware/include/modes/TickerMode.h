@@ -4,7 +4,6 @@
 
 #include "config/constants.h"     // NOLINT(misc-include-cleaner)
 #include "handlers/TextHandler.h" // NOLINT(misc-include-cleaner)
-#include "modules/FontModule.h"
 #include "modules/ModeModule.h"
 
 #include <bits/unique_ptr.h>
@@ -12,35 +11,41 @@
 class TickerMode final : public ModeModule
 {
 private:
-    bool pending = false;
+    static inline std::string message{NAME};
 
-    int8_t offsetY = GRID_ROWS / 2;
+    bool pending{false};
 
-    int16_t offsetX = GRID_COLUMNS;
-    int16_t width = 0;
+    int8_t offsetY{GRID_ROWS / 2};
 
-    unsigned long lastMillis = 0;
+    int16_t offsetX{GRID_COLUMNS};
+    int16_t width{0};
 
-    FontModule *font = nullptr;
+    unsigned long lastMillis{0UL};
 
-    std::string message = NAME;
+    std::unique_ptr<const FontModule> font{};
 
-    std::unique_ptr<TextHandler> text = nullptr;
+    std::unique_ptr<TextHandler> text{};
 
-    void setFont(const char *fontName);
-    void setMessage(std::string _message);
+    void setFont(std::string_view fontName);
+    void setMessage(std::string_view _message);
 
     void transmit();
 
 public:
-    explicit TickerMode() : ModeModule("Ticker") {};
+    static constexpr std::string_view name{"Ticker"};
+
+    explicit TickerMode() : ModeModule(name) {};
 
     void configure() override;
     void begin() override;
     void handle() override;
     void end() override;
 
-    void onReceive(JsonObjectConst payload, const char *source) override;
+    void onReceive(JsonObjectConst payload, std::string_view source) override;
+
+#if EXTENSION_HOMEASSISTANT
+    void onHomeAssistant(JsonDocument &discovery, std::string topic, std::string unique) override;
+#endif
 };
 
 #endif // MODE_TICKER

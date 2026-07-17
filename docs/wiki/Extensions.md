@@ -1,6 +1,6 @@
 # 🧩 Extensions
 
-**Accessories:** [Button](#️-button) | [Infrared](#-infrared) | [Microphone](#️-microphone) | [Photocell](#-photocell) | [RTC](#-rtc)
+**Accessories:** [Button](#️-button) | [Infrared](#-infrared) | [Microphone](#️-microphone) | [Photocell](#-photocell) | [RTC](#-rtc) | [Status LED](#-status-led)
 
 **APIs:** [MQTT](#️-mqtt) | [RESTful](#️-restful) | [Server-Sent Events](#-server-sent-events) | [WebSocket](#-websocket)
 
@@ -8,7 +8,7 @@
 
 **Smart-home:** [Alexa](#-alexa) | [Home Assistant](#-home-assistant) | [MQTT](#️-mqtt)
 
-**Tools:** [Heap](#-heap) | [OTA](#️-ota)
+**Tools:** [Heap](#-heap) | [OTA](#️-ota) | [Screenshot](#-screenshot)
 
 ## 🎤 Alexa
 
@@ -25,6 +25,7 @@ In the *Alexa app*, navigate to:
 2. Add Device
 3. Other
 4. Wi-Fi
+5. Discover
 
 > [!NOTE]
 > An [*Amazon Alexa*](https://www.amazon.com/smart-home-devices/b?node=9818047011) device is required.
@@ -110,7 +111,7 @@ EXTENSION_HOMEASSISTANT='true'
 > [!IMPORTANT]
 > The Home Assistant [MQTT](https://www.home-assistant.io/integrations/mqtt) integration is required.
 
-See also [Home Assistant weather](https://github.com/VIPnytt/Frekvens/wiki/Modes#home-assistant-weather) mode.
+See also [Home Assistant](https://github.com/VIPnytt/Frekvens/wiki/Weather#-home-assistant) weather.
 
 ## 🔴 Infrared
 
@@ -311,11 +312,25 @@ Set up a playlist of [Modes](https://github.com/VIPnytt/Frekvens/wiki/Modes) tha
 
 Integrated into the [Web app](#-web-app) and [Home Assistant](#-home-assistant) extensions.
 
-API payload examples:
+API payload example:
 
 ```json
 {
     "active": true,
+    "playlist": [
+        {
+            "mode": "Clock",
+            "duration": 20
+        },
+        {
+            "mode": "Ticker",
+            "duration": 30
+        },
+        {
+            "mode": "Weather",
+            "duration": 10
+        }
+    ]
 }
 ```
 
@@ -363,6 +378,18 @@ EXTENSION_RTC='true'
 ```
 
 Check out the [Real-Time Clock](https://github.com/VIPnytt/Frekvens/wiki/Real-Time-Clock) wiki for hardware instructions.
+
+## 📜 Screenshot
+
+Take screenshots of the display.
+
+Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
+
+```ini
+EXTENSION_SCREENSHOT='true'
+```
+
+See also [Web app](#-web-app).
 
 ## 📜 Server-Sent Events
 
@@ -417,6 +444,18 @@ Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
 ```ini
 EXTENSION_SIGNAL='true'
 ```
+
+## 🟢 Status LED
+
+Provides low-level status of the device. Solid in normal conditions, blinks about once a second on warnings (e.g. Wi-Fi connectivity issues) and rapidly on errors.
+
+Configure in [.env](https://github.com/VIPnytt/Frekvens/blob/main/.env):
+
+```ini
+EXTENSION_STATUSLED='true'
+```
+
+Check out the [Status LED](https://github.com/VIPnytt/Frekvens/wiki/Status-Led) wiki for more info.
 
 ## 📱 Web app
 

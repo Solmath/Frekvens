@@ -17,6 +17,7 @@ Software features, configuration options and API documentation.
 - [Services](https://github.com/VIPnytt/Frekvens/wiki/Services)
 - [Extensions](https://github.com/VIPnytt/Frekvens/wiki/Extensions)
 - [Modes](https://github.com/VIPnytt/Frekvens/wiki/Modes)
+- [Weather](https://github.com/VIPnytt/Frekvens/wiki/Weather)
 - [Fonts](https://github.com/VIPnytt/Frekvens/wiki/Fonts)
 
 ## ➕ Accessories
@@ -27,6 +28,7 @@ Optional hardware that adds new capabilities and functionality to the device.
 - [Microphone](https://github.com/VIPnytt/Frekvens/wiki/Microphone)
 - [Photocell](https://github.com/VIPnytt/Frekvens/wiki/Photocell)
 - [RTC clock](https://github.com/VIPnytt/Frekvens/wiki/Real-Time-Clock)
+- [Status LED](https://github.com/VIPnytt/Frekvens/wiki/Status-Led)
 
 ## 🗃️ Miscellaneous
 

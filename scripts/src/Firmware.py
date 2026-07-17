@@ -1,11 +1,8 @@
 import decimal
+import logging
 import numbers
-import os
 import pathlib
-import re
 import typing
-
-from .config.version import VERSION
 
 if typing.TYPE_CHECKING:
     from .Frekvens import Frekvens
@@ -13,58 +10,76 @@ if typing.TYPE_CHECKING:
 
 class Firmware:
     NAME: str = "Firmware"
+    path = pathlib.Path("firmware")
     project: "Frekvens"
 
     def __init__(self, project: "Frekvens") -> None:
         self.project = project
 
-    def initialize(self) -> None:
-        with open("firmware/include/config/version.h", "r", encoding="utf-8") as h:
-            if f'#define VERSION "{VERSION}"' not in h.read():
-                raise ValueError(f"{self.NAME} version mismatch")
-
     def finalize(self) -> None:
         self._define_env()
         self._define_pio()
 
-    @staticmethod
-    def clean() -> None:
-        for file in [
-            "firmware/certs/bundle/ca_roots.pem",
-            "firmware/embed/x509_crt_bundle.bin",
-        ]:
-            if os.path.isfile(file):
-                os.remove(file)
-                print(f"Removing {file}")
-
     def _define_env(self) -> None:
+        count_extension = 0
         for option, _value in self.project.dotenv.items():
-            value = _value or ""
-            if value in [
+            if (value := _value or "") in {
                 "false",
                 "true",
-            ]:
+            }:
                 self.project.env.Append(
                     CPPDEFINES=[
                         (option, "true" if value == "true" else "false"),
                     ]
                 )
+                if value == "true" and option.startswith("EXTENSION_"):
+                    count_extension += 1
             else:
                 self.project.env.Append(
                     CPPDEFINES=[
                         (option, self.project.env.StringifyMacro(value)),
                     ]
                 )
+                if option == "TEMPERATURE_UNIT":
+                    if value == "°C":
+                        self.project.env.Append(
+                            CPPDEFINES=[
+                                ("TEMPERATURE_CELSIUS", "true"),
+                            ]
+                        )
+                    elif value == "°F":
+                        self.project.env.Append(
+                            CPPDEFINES=[
+                                ("TEMPERATURE_FAHRENHEIT", "true"),
+                            ]
+                        )
+                    elif value == "°K":
+                        self.project.env.Append(
+                            CPPDEFINES=[
+                                ("TEMPERATURE_KELVIN", "true"),
+                            ]
+                        )
+                    else:
+                        logging.warning("%s %r is unsupported. Valid values are '°C', '°F' and '°K'.", option, value)
+        self.project.env.Append(
+            CPPDEFINES=list(
+                {
+                    option: value
+                    for option, value in {
+                        "COUNT_EXTENSION": count_extension,
+                    }.items()
+                    if value
+                }.items()
+            )
+        )
 
     def _define_pio(self) -> None:
         config = self.project.env.GetProjectConfig()
-        for option in [
+        for option in {
             "board",
             "monitor_speed",
-        ]:
-            value = config.get(f"env:{self.project.env['PIOENV']}", option, None)
-            if value:
-                _key = option.replace(".", "__").upper()
+        }:
+            if value := config.get(f"env:{self.project.env['PIOENV']}", option, None):
                 _value = (
                     value
                     if isinstance(value, (decimal.Decimal, numbers.Number))
@@ -72,35 +87,6 @@ class Firmware:
                 )
                 self.project.env.Append(
                     CPPDEFINES=[
-                        (_key, _value),
+                        (option.replace(".", "__").upper(), _value),
                     ]
                 )
-        for option in [
-            "board_build.embed_files",
-            "board_build.embed_txtfiles",
-        ]:
-            embed_files = self.project.env.GetProjectOption(option, None)
-            if embed_files:
-                if not isinstance(embed_files, list):
-                    embed_files = [embed_files]
-                _prefix = option.replace(".", "__").upper()
-                for embed_file in embed_files:
-                    _key = (
-                        _prefix
-                        + "__"
-                        + re.sub(
-                            r"_+",
-                            "_",
-                            re.sub(
-                                r"[^A-Za-z0-9]",
-                                "_",
-                                pathlib.Path(embed_file).stem.upper(),
-                            ),
-                        ).strip("_")
-                    )
-                    _value = re.sub(r"[^A-Za-z0-9]", "_", embed_file)
-                    self.project.env.Append(
-                        CPPDEFINES=[
-                            (_key, self.project.env.StringifyMacro(_value)),
-                        ]
-                    )

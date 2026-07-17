@@ -2,33 +2,39 @@
 
 #if MODE_GAMEOFLIFE
 
+#include "handlers/ClockHandler.h" // NOLINT(misc-include-cleaner)
 #include "modules/ModeModule.h"
+
+#include <bits/unique_ptr.h>
 
 class GameOfLifeMode final : public ModeModule
 {
 private:
-    tm local{};
+    uint8_t active{0U};
+    uint8_t brightness{INT8_MAX};
+    uint8_t yMin{0U};
 
-    bool clock = true;
-    bool pending = false;
+    unsigned long lastMillis{0UL};
 
-    uint8_t active = 0;
-
-    int hour = 24;
-    int minute = 60;
-
-    unsigned long lastMillis = 0;
+    std::unique_ptr<ClockHandler> clock{};
 
     void setClock(bool _clock);
     void transmit();
 
 public:
-    explicit GameOfLifeMode() : ModeModule("Game of Life") {};
+    static constexpr std::string_view name{"Game of Life"};
+
+    explicit GameOfLifeMode() : ModeModule(name) {};
 
     void configure() override;
     void begin() override;
     void handle() override;
-    void onReceive(JsonObjectConst payload, const char *source) override;
+
+    void onReceive(JsonObjectConst payload, std::string_view source) override;
+
+#if EXTENSION_HOMEASSISTANT
+    void onHomeAssistant(JsonDocument &discovery, std::string topic, std::string unique) override;
+#endif
 };
 
 #endif // MODE_GAMEOFLIFE

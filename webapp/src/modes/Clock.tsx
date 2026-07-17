@@ -1,7 +1,13 @@
+import {
+    mdiCheckboxBlankCircleOutline,
+    mdiCheckboxMarkedCircleOutline,
+    mdiFormatFont,
+    mdiProgressClock,
+} from "@mdi/js";
 import { type Component, createSignal, For } from "solid-js";
 
-import { ClockIcon } from "../components/Clock";
-import { Toast } from "../components/Toast";
+import { ClockIcon, ClockText } from "../components/Clock";
+import { Icon } from "../components/Icon";
 import { SidebarSection } from "../extensions/WebApp";
 import { WebSocketWS } from "../extensions/WebSocket";
 import { MainComponent as ModesMainComponent } from "../services/Modes";
@@ -18,9 +24,12 @@ export const receiver = (json: { font?: string; fonts?: string[]; ticking?: bool
     json?.ticking !== undefined && setTicking(json.ticking);
 };
 
-const { toast } = Toast();
-
-export const Main: Component = () => <ModesMainComponent icon={ClockIcon()} />;
+export const Main: Component = () => (
+    <ModesMainComponent
+        icon={ClockIcon()}
+        text={ClockText()}
+    />
+);
 
 export const Sidebar: Component = () => {
     const handleFont = (font: string) => {
@@ -32,11 +41,10 @@ export const Sidebar: Component = () => {
                 },
             }),
         );
-        toast(`${name} updated`);
     };
 
-    const handleTicking = (ticking: boolean) => {
-        setTicking(ticking);
+    const handleTicking = () => {
+        setTicking(!getTicking());
         WebSocketWS.send(
             JSON.stringify({
                 [name]: {
@@ -44,27 +52,31 @@ export const Sidebar: Component = () => {
                 },
             }),
         );
-        toast(`${name} updated`);
     };
 
     return (
-        <SidebarSection title={name}>
-            <select
-                class="mt-3 w-full"
-                value={getFont()}
-                onchange={(e) => handleFont(e.currentTarget.value)}
-            >
-                <For each={getFonts()}>{(font) => <option>{font}</option>}</For>
-            </select>
-            <label class="flex items-center gap-3 cursor-pointer">
-                <input
-                    type="checkbox"
-                    checked={getTicking()}
-                    onChange={(e) => handleTicking(e.currentTarget.checked)}
-                    class="cursor-pointer w-5 h-5"
-                />
-                <span>Ticking</span>
-            </label>
+        <SidebarSection>
+            <div class="action grid-cols-[--spacing(4)_1fr]">
+                <Icon path={mdiFormatFont} />
+                <select
+                    class="w-full"
+                    onchange={(e) => handleFont(e.currentTarget.value)}
+                    value={getFont()}
+                >
+                    <For each={getFonts()}>{(font) => <option>{font}</option>}</For>
+                </select>
+            </div>
+            <div class="action grid-cols-[--spacing(4)_1fr_--spacing(12)]">
+                <Icon path={mdiProgressClock} />
+                Second indicator
+                <button
+                    class={`w-full ${getTicking() ? "action-negative" : "action-deactivated"}`}
+                    onclick={handleTicking}
+                    type="button"
+                >
+                    <Icon path={getTicking() ? mdiCheckboxMarkedCircleOutline : mdiCheckboxBlankCircleOutline} />
+                </button>
+            </div>
         </SidebarSection>
     );
 };

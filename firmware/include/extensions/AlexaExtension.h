@@ -4,27 +4,31 @@
 
 #include "modules/ExtensionModule.h"
 
+#include <AsyncUDP.h>
 #include <ESPAsyncWebServer.h>
-#include <fauxmoESP.h>
 
 class AlexaExtension final : public ExtensionModule
 {
 private:
-    fauxmoESP fauxmo = fauxmoESP();
+    static constexpr std::string_view name{"Alexa"};
 
-    static void onGet(AsyncWebServerRequest *request);
-    static void onSet(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total);
-    static void onSetState(unsigned char deviceId, const char *deviceName, bool state, unsigned char value);
+    static inline AsyncUDP upnp{}; // NOLINT(bugprone-throwing-static-initialization,cert-err58-cpp)
+
+    [[nodiscard]] static std::string light();
+    [[nodiscard]] static std::pair<std::array<char, 17U>, std::array<char, 13U>> mac();
+    static void onGetDescription(AsyncWebServerRequest *request);
+    static void onGetLight(AsyncWebServerRequest *request);
+    static void onGetLights(AsyncWebServerRequest *request);
+    static void onPostApi(AsyncWebServerRequest *request, const uint8_t *data, size_t len, size_t index, size_t total);
+    static void onPutState(AsyncWebServerRequest *request, const uint8_t *data, size_t len, size_t index, size_t total);
+    static void onUpnp(AsyncUDPPacket &packet);
 
 public:
-    explicit AlexaExtension();
+    explicit AlexaExtension() : ExtensionModule(name) {};
 
     void begin() override;
-    void handle() override;
 
-    void onTransmit(JsonObjectConst payload, const char *source) override;
+    static void onMdns();
 };
-
-extern AlexaExtension *Alexa; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 #endif // EXTENSION_ALEXA

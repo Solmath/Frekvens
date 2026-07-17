@@ -2,7 +2,7 @@ name: End of life
 
 on:
   schedule:
-    - cron: 0 12 1 * *
+    - cron: 24 7 31 * *
 
   workflow_dispatch:
 
@@ -10,19 +10,63 @@ permissions:
   contents: read
 
 jobs:
-  node:
-    name: Node.js
+  idle-check:
+    name: Idle check
+    runs-on: ubuntu-slim
+
+    outputs:
+      active: ${{ steps.idle.outputs.active }}
+
+    steps:
+      - name: GitHub Script idle check
+        id: idle
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { data: branch } = await github.rest.repos.getBranch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: context.ref.replace('refs/heads/', ''),
+            });
+            const active = new Date() - new Date(branch.commit.commit.committer.date) <= 90 * 86400000;
+            core.info(`Branch active: ${active}`);
+            core.setOutput('active', active);
+
+  nodejs-wheel:
+    name: Node.js wheel version
+    needs: idle-check
     runs-on: ubuntu-latest
+    if: ${{ fromJSON(needs.idle-check.outputs.active) }}
+  
+    outputs:
+      version: ${{ steps.lock.outputs.version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Node.js wheel binaries version
+        id: lock
+        run: echo "version=$(yq -o toml -p toml '.package[] | select(.name == "nodejs-wheel-binaries") | .version' uv.lock)" >> "$GITHUB_OUTPUT"
+
+  nodejs:
+    name: Node.js
+    needs:
+      - idle-check
+      - nodejs-wheel
+    runs-on: ubuntu-slim
+    if: ${{ fromJSON(needs.idle-check.outputs.active) }}
 
     strategy:
+      fail-fast: false
       matrix:
-        include:
-          - node-version: 20
-          - node-version: 25
+        node-version:
+          - ${{ needs.nodejs-wheel.outputs.version }}
+          - 24
 
     steps:
       - name: End-of-Life
-        uses: sindrel/endoflife-github-action@6931ca61221cebfe107b0c3349979cb7075ff270 # v1.0.2
+        uses: sindrel/endoflife-github-action@5f91adaabc542a346876290ff0f447c7bc355f99 # v1.0.3
         with:
           product: nodejs
           version: ${{ matrix.node-version }}
@@ -30,17 +74,21 @@ jobs:
 
   python:
     name: Python
-    runs-on: ubuntu-latest
+    needs: idle-check
+    runs-on: ubuntu-slim
+    if: ${{ fromJSON(needs.idle-check.outputs.active) }}
 
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - python-version: "3.10"
+          - python-version: '3.10'
+          - python-version: 3.13
           - python-version: 3.14
 
     steps:
       - name: End-of-Life
-        uses: sindrel/endoflife-github-action@6931ca61221cebfe107b0c3349979cb7075ff270 # v1.0.2
+        uses: sindrel/endoflife-github-action@5f91adaabc542a346876290ff0f447c7bc355f99 # v1.0.3
         with:
           product: python
           version: ${{ matrix.python-version }}

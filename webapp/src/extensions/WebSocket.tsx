@@ -9,6 +9,7 @@ import {
     EXTENSION_MICROPHONE,
     EXTENSION_PHOTOCELL,
     EXTENSION_PLAYLIST,
+    EXTENSION_SCREENSHOT,
     EXTENSION_SIGNAL,
     MODE_ANIMATION,
     MODE_CLOCK,
@@ -17,12 +18,15 @@ import {
     MODE_HOMETHERMOMETER,
     MODE_STREAM,
     MODE_TICKER,
+    MODE_WAVEFORM,
+    MODE_WEATHER,
 } from "../config/modules";
 import { name as ExtensionIrName, receiver as ExtensionIrReceiver } from "../extensions/Infrared";
 import { name as ExtensionMessageName, receiver as ExtensionMessageReceiver } from "../extensions/Message";
 import { name as ExtensionMicName, receiver as ExtensionMicReceiver } from "../extensions/Microphone";
 import { name as ExtensionPhotocellName, receiver as ExtensionPhotocellReceiver } from "../extensions/Photocell";
 import { name as ExtensionPlaylistName, receiver as ExtensionPlaylistReceiver } from "../extensions/Playlist";
+import { name as ExtensionScreenshotName, receiver as ExtensionScreenshotReceiver } from "../extensions/Screenshot";
 import { name as ExtensionSignalName, receiver as ExtensionSignalReceiver } from "../extensions/Signal";
 import { name as ModeAnimationName, receiver as ModeAnimationReceiver } from "../modes/Animation";
 import { name as ModeClockName, receiver as ModeClockReceiver } from "../modes/Clock";
@@ -31,6 +35,8 @@ import { name as ModeDrawName, receiver as ModeDrawReceiver } from "../modes/Dra
 import { name as ModeHomeThermometerName, receiver as ModeHomeThermometerReceiver } from "../modes/HomeThermometer";
 import { name as ModeStreamName, receiver as ModeStreamReceiver } from "../modes/Stream";
 import { name as ModeTickerName, receiver as ModeTickerReceiver } from "../modes/Ticker";
+import { name as ModeWaveformName, receiver as ModeWaveformReceiver } from "../modes/Waveform";
+import { name as ModeWeatherName, receiver as ModeWeatherReceiver } from "../modes/Weather";
 import { name as ConnectivityName, receiver as ConnectivityReceiver } from "../services/Connectivity";
 import { name as DeviceName, receiver as DeviceReceiver } from "../services/Device";
 import { name as DisplayName, receiver as DisplayReceiver } from "../services/Display";
@@ -71,6 +77,9 @@ export const WebSocketmessages: ParentComponent = (props) => {
                 json[ExtensionPhotocellName] &&
                 ExtensionPhotocellReceiver(json[ExtensionPhotocellName]);
             EXTENSION_PLAYLIST && json[ExtensionPlaylistName] && ExtensionPlaylistReceiver(json[ExtensionPlaylistName]);
+            EXTENSION_SCREENSHOT &&
+                json[ExtensionScreenshotName] &&
+                ExtensionScreenshotReceiver(json[ExtensionScreenshotName]);
             EXTENSION_SIGNAL && json[ExtensionSignalName] && ExtensionSignalReceiver(json[ExtensionSignalName]);
             MODE_ANIMATION && json[ModeAnimationName] && ModeAnimationReceiver(json[ModeAnimationName]);
             MODE_CLOCK && json[ModeClockName] && ModeClockReceiver(json[ModeClockName]);
@@ -81,6 +90,8 @@ export const WebSocketmessages: ParentComponent = (props) => {
                 ModeHomeThermometerReceiver(json[ModeHomeThermometerName]);
             MODE_TICKER && json[ModeTickerName] && ModeTickerReceiver(json[ModeTickerName]);
             MODE_STREAM && json[ModeStreamName] && ModeStreamReceiver(json[ModeStreamName]);
+            MODE_WAVEFORM && json[ModeWaveformName] && ModeWaveformReceiver(json[ModeWaveformName]);
+            MODE_WEATHER && json[ModeWeatherName] && ModeWeatherReceiver(json[ModeWeatherName]);
         });
     });
     return props.children;

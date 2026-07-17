@@ -1,7 +1,7 @@
-import { mdiFormatText } from "@mdi/js";
+import { mdiFormatFont, mdiFormatText } from "@mdi/js";
 import { type Component, createSignal, For } from "solid-js";
 
-import { Toast } from "../components/Toast";
+import { Icon } from "../components/Icon";
 import { Tooltip } from "../components/Tooltip";
 import { SidebarSection } from "../extensions/WebApp";
 import { WebSocketWS } from "../extensions/WebSocket";
@@ -18,8 +18,6 @@ export const receiver = (json: { font?: string; message?: string }) => {
     json?.message !== undefined && setMessage(json.message);
 };
 
-const { toast } = Toast();
-
 export const Main: Component = () => <ModesMainComponent icon={mdiFormatText} />;
 
 export const Sidebar: Component = () => {
@@ -32,7 +30,6 @@ export const Sidebar: Component = () => {
                 },
             }),
         );
-        toast(`${name} updated`);
     };
 
     const handleMessage = (message: string) => {
@@ -44,29 +41,34 @@ export const Sidebar: Component = () => {
                 },
             }),
         );
-        toast(`${name} updated`);
     };
 
     return (
-        <SidebarSection title={name}>
-            <input
-                class="w-full"
-                maxlength="255"
-                onchange={(e) => handleMessage(e.currentTarget.value)}
-                placeholder="Message"
-                spellcheck="true"
-                type="text"
-                value={getMessage()}
-            />
-            <Tooltip text="Character availability may vary">
-                <select
-                    class="mt-3 w-full"
-                    value={getFont()}
-                    onchange={(e) => handleFont(e.currentTarget.value)}
-                >
-                    <For each={FontsList()}>{(font) => <option>{font}</option>}</For>
-                </select>
-            </Tooltip>
+        <SidebarSection>
+            <div class="action grid-cols-[--spacing(4)_1fr]">
+                <Icon path={mdiFormatText} />
+                <input
+                    class="mt-1 w-full"
+                    maxlength="255"
+                    onchange={(e) => handleMessage(e.currentTarget.value)}
+                    placeholder="Message"
+                    spellcheck="true"
+                    type="text"
+                    value={getMessage()}
+                />
+            </div>
+            <div class="action grid-cols-[--spacing(4)_1fr]">
+                <Icon path={mdiFormatFont} />
+                <Tooltip text="Character availability may vary">
+                    <select
+                        class="w-full"
+                        value={getFont()}
+                        onchange={(e) => handleFont(e.currentTarget.value)}
+                    >
+                        <For each={FontsList()}>{(font) => <option>{font}</option>}</For>
+                    </select>
+                </Tooltip>
+            </div>
         </SidebarSection>
     );
 };

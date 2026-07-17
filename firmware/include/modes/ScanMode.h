@@ -7,12 +7,14 @@
 class ScanMode final : public ModeModule
 {
 private:
-    uint8_t column = 0;
+    uint8_t column{0U};
 
-    unsigned long lastMillis = 0;
+    unsigned long lastMillis{0UL};
 
 public:
-    explicit ScanMode() : ModeModule("Scan") {};
+    static constexpr std::string_view name{"Scan"};
+
+    explicit ScanMode() : ModeModule(name) {};
 
     void handle() override;
 };

@@ -3,36 +3,41 @@
 #include "modes/LinesMode.h"
 
 #include "config/constants.h" // NOLINT(misc-include-cleaner)
-#include "extensions/MicrophoneExtension.h"
 #include "services/DisplayService.h"
+#include "services/ExtensionsService.h"
+
+static_assert(GRID_COLUMNS >= 4U, __STRING(MODE_LINES) " is not compatible with this device's display size.");
 
 void LinesMode::handle()
 {
 #if EXTENSION_MICROPHONE
-    if (millis() - lastMillis > INT8_MAX && Microphone->isTriggered())
+    if (millis() - lastMillis > INT8_MAX && Extensions.Microphone().isTriggered())
 #else
     if (millis() - lastMillis > INT8_MAX)
 #endif // EXTENSION_MICROPHONE
     {
         lastMillis = millis();
-        for (uint8_t y = 0; y < GRID_ROWS; ++y)
+        for (uint8_t offset{0U}; offset < GRID_COLUMNS + 2U; offset += 4U)
         {
-            for (uint8_t n = 0; n < GRID_COLUMNS + 2; n += 4)
+            if (x + offset < GRID_COLUMNS)
             {
-                if (x + n < GRID_COLUMNS)
+                for (uint8_t y{0U}; y < GRID_ROWS; ++y)
                 {
-                    Display.setPixel(x + n, y);
+                    Display.setPixel(x + offset, y, UINT8_MAX);
                 }
-                if (x + n - 2 >= 0 && x + n - 2 < GRID_COLUMNS)
+            }
+            if (x + offset >= 2U && x + offset < GRID_COLUMNS + 2U)
+            {
+                for (uint8_t y{0U}; y < GRID_ROWS; ++y)
                 {
-                    Display.setPixel(x + n - 2, y, 0);
+                    Display.setPixel(x + offset - 2U, y, 0U);
                 }
             }
         }
         ++x;
-        if (x >= 4)
+        if (x >= 4U)
         {
-            x = 0;
+            x = 0U;
         }
     }
 }

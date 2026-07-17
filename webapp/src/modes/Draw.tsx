@@ -1,7 +1,15 @@
-import { mdiBackupRestore, mdiContentSave, mdiDownload, mdiEraser, mdiUpload } from "@mdi/js";
+import {
+    mdiBackupRestore,
+    mdiContentSave,
+    mdiDownload,
+    mdiEraser,
+    mdiFileOutline,
+    mdiImageFrame,
+    mdiUpload,
+} from "@mdi/js";
 import { type Component, createSignal } from "solid-js";
 
-import { Canvas, Strength } from "../components/Canvas";
+import { Canvas, StrengthComponent as CanvasStrengthComponent } from "../components/Canvas";
 import { csvExport, fileImport } from "../components/File";
 import { Icon } from "../components/Icon";
 import { Toast } from "../components/Toast";
@@ -23,7 +31,7 @@ export const Sidebar: Component = () => {
     const { toast } = Toast();
 
     const handleDownload = () => {
-        csvExport(name, [
+        csvExport(name.toLowerCase(), [
             getFrame() || new Array(Device.GRID_COLUMNS * Device.GRID_ROWS).fill(0),
         ]);
     };
@@ -66,8 +74,20 @@ export const Sidebar: Component = () => {
     };
 
     return (
-        <SidebarSection title={name}>
-            <div class="grid grid-cols-2 gap-3">
+        <SidebarSection>
+            <div class="action grid-cols-[--spacing(4)_1fr_--spacing(12)_--spacing(12)]">
+                <Icon path={mdiImageFrame} />
+                Drawing
+                <Tooltip text="Restore drawing">
+                    <button
+                        class="action-neutral w-full"
+                        disabled={getSaved()}
+                        onclick={handleLoad}
+                        type="button"
+                    >
+                        <Icon path={mdiBackupRestore} />
+                    </button>
+                </Tooltip>
                 <Tooltip text="Save drawing">
                     <button
                         class="action-positive w-full"
@@ -78,14 +98,17 @@ export const Sidebar: Component = () => {
                         <Icon path={mdiContentSave} />
                     </button>
                 </Tooltip>
-                <Tooltip text="Restore drawing">
+            </div>
+            <div class="action grid-cols-[--spacing(4)_1fr_--spacing(12)_--spacing(12)]">
+                <Icon path={mdiFileOutline} />
+                Import/export
+                <Tooltip text="Upload drawing or image">
                     <button
-                        class="action-neutral w-full"
-                        disabled={getSaved()}
-                        onclick={handleLoad}
+                        class="w-full"
+                        onclick={handleUpload}
                         type="button"
                     >
-                        <Icon path={mdiBackupRestore} />
+                        <Icon path={mdiUpload} />
                     </button>
                 </Tooltip>
                 <Tooltip text="Download drawing">
@@ -98,17 +121,8 @@ export const Sidebar: Component = () => {
                         <Icon path={mdiDownload} />
                     </button>
                 </Tooltip>
-                <Tooltip text="Upload drawing or image">
-                    <button
-                        class="w-full"
-                        onclick={handleUpload}
-                        type="button"
-                    >
-                        <Icon path={mdiUpload} />
-                    </button>
-                </Tooltip>
             </div>
-            <Strength />
+            <CanvasStrengthComponent />
         </SidebarSection>
     );
 };

@@ -10,17 +10,15 @@
 class ConnectivityService final : public ServiceModule
 {
 private:
-    static constexpr std::string_view _name = "Connectivity";
+    explicit ConnectivityService() : ServiceModule("Connectivity") {};
 
-    explicit ConnectivityService() : ServiceModule(_name.data()) {};
+    bool mdns{false};
+    bool pending{false};
+    bool routable{false};
 
-    bool mDNS = false;
-    bool pending = false;
-    bool routable = false;
+    unsigned long lastMillis{0UL};
 
-    unsigned long lastMillis = 0;
-
-    std::unique_ptr<DNSServer> dns = nullptr;
+    std::unique_ptr<DNSServer> dns{};
 
     WiFiMulti multi;
 
@@ -29,22 +27,22 @@ private:
     void connect(const char *ssid, const char *key);
     void transmit();
 
-    static void onConnected(WiFiEvent_t event, WiFiEventInfo_t info);
-    static void onDisconnected(WiFiEvent_t event, WiFiEventInfo_t info);
-    static void onIPv4(WiFiEvent_t event, WiFiEventInfo_t info);
-    static void onIPv6(WiFiEvent_t event, WiFiEventInfo_t info);
+    static void onConnected(arduino_event_id_t event);
+    static void onDisconnected(arduino_event_id_t event, arduino_event_info_t info);
+    static void onIPv4(arduino_event_id_t event, arduino_event_info_t info);
+    static void onIPv6(arduino_event_id_t event, arduino_event_info_t info);
     static void onRoutable();
-    static void onScan(WiFiEvent_t event, WiFiEventInfo_t info);
+    static void onScan(arduino_event_id_t event);
 
 public:
-    static constexpr std::string_view userAgent = "Frekvens/" VERSION " (ESP32; +https://github.com/VIPnytt/Frekvens)";
-
     void configure();
-    void begin();
     void handle();
-    void onReceive(JsonObjectConst payload, const char *source) override;
 
-    [[nodiscard]] static std::span<const uint8_t> certificates() noexcept;
+    void onReceive(JsonObjectConst payload, std::string_view source) override;
+
+#if EXTENSION_HOMEASSISTANT
+    void onHomeAssistant(JsonDocument &discovery, std::string topic, std::string unique) override;
+#endif
 
     static ConnectivityService &getInstance();
 };

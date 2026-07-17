@@ -10,16 +10,16 @@ void WebServerService::begin() const { http->onNotFound(&onNotFound); }
 void WebServerService::onNotFound(AsyncWebServerRequest *request)
 {
 #if EXTENSION_WEBAPP
-    if (WiFiClass::getMode() == wifi_mode_t::WIFI_MODE_AP && request->host() != WiFi.softAPIP().toString())
+    if (WiFiClass::getMode() == wifi_mode_t::WIFI_MODE_AP && strcmp(request->host().c_str(), "192.168.4.1") != 0)
     {
-        ESP_LOGV(WebServer.name, "redirecting"); // NOLINT(cppcoreguidelines-avoid-do-while)
-        request->redirect("http://" + WiFi.softAPIP().toString(), t_http_codes::HTTP_CODE_FOUND);
+        ESP_LOGV(WebServer.name.data(), "HTTP 302 Found"); // NOLINT(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
+        request->redirect("http://192.168.4.1", t_http_codes::HTTP_CODE_FOUND);
     }
     else
 #endif // EXTENSION_WEBAPP
     {
-        // NOLINTNEXTLINE(cppcoreguidelines-avoid-do-while)
-        ESP_LOGW(WebServer.name, "HTTP 404, %s %s", WebServer.name, request->methodToString(), request->url());
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
+        ESP_LOGD(WebServer.name.data(), "HTTP 404 Not Found, %s %s", request->methodToString(), request->url().c_str());
         request->send(t_http_codes::HTTP_CODE_NOT_FOUND);
     }
 }
@@ -32,5 +32,5 @@ WebServerService &WebServerService::getInstance()
     return instance;
 }
 
-// NOLINTNEXTLINE(cert-err58-cpp,cppcoreguidelines-avoid-non-const-global-variables)
-WebServerService &WebServer = WebServerService::getInstance();
+// NOLINTNEXTLINE(bugprone-throwing-static-initialization,cert-err58-cpp,cppcoreguidelines-avoid-non-const-global-variables)
+WebServerService &WebServer{WebServerService::getInstance()};

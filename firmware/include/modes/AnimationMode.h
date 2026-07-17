@@ -10,13 +10,13 @@
 class AnimationMode final : public ModeModule
 {
 private:
-    bool pending = false;
+    bool pending{false};
 
-    uint8_t index = 0;
+    uint8_t index{0U};
 
-    uint16_t interval = 500;
+    uint16_t interval{500U};
 
-    unsigned long lastMillis = 0;
+    unsigned long lastMillis{0UL};
 
     void setFrame(uint8_t _index, std::span<const uint8_t> frame);
     void setFrames(uint8_t count);
@@ -25,12 +25,14 @@ private:
     void transmit(uint8_t index, std::span<const uint8_t> frame);
 
 public:
-    explicit AnimationMode() : ModeModule("Animation") {};
+    static constexpr std::string_view name{"Animation"};
+
+    explicit AnimationMode() : ModeModule(name) {};
 
     void begin() override;
     void handle() override;
 
-    void onReceive(JsonObjectConst payload, const char *source) override;
+    void onReceive(JsonObjectConst payload, std::string_view source) override;
 };
 
 #endif // MODE_ANIMATION

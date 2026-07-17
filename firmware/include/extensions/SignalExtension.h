@@ -10,11 +10,13 @@
 class SignalExtension final : public ExtensionModule
 {
 private:
-    bool active = false;
+    static constexpr std::string_view name{"Signal"};
 
-    unsigned long lastMillis = 0;
+    bool active{false};
 
-    uint8_t duration = 30;
+    unsigned long lastMillis{0UL};
+
+    uint32_t duration{INT16_MAX};
 
     std::array<uint8_t, GRID_COLUMNS * GRID_ROWS> frame{};
 
@@ -24,14 +26,12 @@ private:
     void transmit();
 
 public:
-    explicit SignalExtension();
+    explicit SignalExtension() : ExtensionModule(name) {};
 
     void begin() override;
     void handle() override;
 
-    void onReceive(JsonObjectConst payload, const char *source) override;
+    void onReceive(JsonObjectConst payload, std::string_view source) override;
 };
-
-extern SignalExtension *Signal; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 #endif // EXTENSION_SIGNAL

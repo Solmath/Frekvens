@@ -5,7 +5,7 @@
 #include "services/DeviceService.h"
 #include "services/DisplayService.h"
 
-#include <Preferences.h>
+#include <nvs.h>
 
 void DrawMode::begin()
 {
@@ -14,7 +14,7 @@ void DrawMode::begin()
     {
         for (const uint8_t pixel : frame)
         {
-            if (pixel > 0)
+            if (pixel != 0U)
             {
                 pending = true;
                 render = true;
@@ -42,40 +42,36 @@ void DrawMode::end() { save(true); }
 
 void DrawMode::load(bool cache)
 {
-    Preferences Storage;
-    Storage.begin(name, true);
-    const char *const key = cache ? "cache" : "saved";
-    if (cache && Storage.isKey("cache"))
+    nvs_handle_t handle{};
+    if (nvs_open(name.data(), nvs_open_mode_t::NVS_READONLY, &handle) == ESP_OK)
     {
-        Storage.getBytes(key, frame.data(), frame.size());
-        pending = true;
-        render = true;
+        size_t length{frame.size()}; // NOLINT(cppcoreguidelines-init-variables)
+        const char *key{nullptr};
+        if ((cache && nvs_get_blob(handle, "cache", frame.data(), &length) == ESP_OK) ||
+            nvs_get_blob(handle, "saved", frame.data(), &length) == ESP_OK)
+        {
+            pending = true;
+            render = true;
+        }
+        nvs_close(handle);
     }
-    else if (Storage.isKey("saved"))
-    {
-        Storage.putBytes(key, frame.data(), frame.size());
-        pending = true;
-        render = true;
-    }
-    Storage.end();
 }
 
 void DrawMode::save(bool cache)
 {
-    for (const uint8_t pixel : frame)
+    if (std::any_of(frame.begin(), frame.end(), [](uint8_t pixel) { return pixel != 0U; }))
     {
-        if (pixel > 0)
+        nvs_handle_t handle{};
+        if (nvs_open(name.data(), nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
         {
-            Preferences Storage;
-            Storage.begin(name);
-            Storage.putBytes(cache ? "cache" : "saved", frame.data(), frame.size());
-            Storage.end();
-            pending = true;
-            if (!cache)
-            {
-                ESP_LOGV(name, "saved");
-            }
-            break;
+            nvs_set_blob(handle, cache ? "cache" : "saved", frame.data(), frame.size());
+            nvs_commit(handle);
+            nvs_close(handle);
+        }
+        pending = true;
+        if (!cache)
+        {
+            ESP_LOGV(name.data(), "saved"); // NOLINT(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
         }
     }
 }
@@ -83,38 +79,39 @@ void DrawMode::save(bool cache)
 void DrawMode::transmit()
 {
     JsonDocument doc; // NOLINT(misc-const-correctness)
-    JsonArray frame{doc["frame"].to<JsonArray>()};
+    JsonArray _frame{doc["frame"].to<JsonArray>()};
     for (const uint8_t pixel : frame)
     {
-        frame.add(pixel);
+        _frame.add(pixel);
     }
     Device.transmit(doc.as<JsonObjectConst>(), name, false);
 }
 
 void DrawMode::onReceive(JsonObjectConst payload,
-                         const char *source) // NOLINT(misc-unused-parameters)
+                         std::string_view source) // NOLINT(misc-unused-parameters)
 {
-    if (payload["action"].is<const char *>())
+    // Action
+    if (payload["action"].is<std::string_view>())
     {
-        const char *const action = payload["action"].as<const char *>();
+        const std::string_view action{payload["action"].as<std::string_view>()};
         // Clear
-        if (strcmp(action, "clear") == 0)
+        if (action == "clear")
         {
-            frame.fill(0);
+            frame.fill(0U);
             render = true;
         }
         // Load
-        else if (strcmp(action, "load") == 0)
+        else if (action == "load")
         {
             load();
         }
         // Pull
-        else if (strcmp(action, "pull") == 0)
+        else if (action == "pull")
         {
             save(true);
         }
         // Save
-        else if (strcmp(action, "save") == 0)
+        else if (action == "save")
         {
             save();
         }
@@ -122,8 +119,8 @@ void DrawMode::onReceive(JsonObjectConst payload,
     // Frame
     if (payload["frame"].is<JsonArrayConst>() && payload["frame"].size() == frame.size())
     {
-        const JsonArrayConst _frame = payload["frame"].as<JsonArrayConst>();
-        for (size_t i = 0; i < frame.size(); ++i)
+        const JsonArrayConst _frame{payload["frame"].as<JsonArrayConst>()};
+        for (size_t i{0U}; i < frame.size(); ++i)
         {
             if (_frame[i].is<uint8_t>())
             {
@@ -139,8 +136,12 @@ void DrawMode::onReceive(JsonObjectConst payload,
         {
             if (pixel["x"].is<uint8_t>() && pixel["y"].is<uint8_t>() && pixel["brightness"].is<uint8_t>())
             {
-                frame[pixel["x"].as<uint8_t>() + pixel["y"].as<uint8_t>() * GRID_COLUMNS] =
-                    pixel["brightness"].as<uint8_t>();
+                const uint8_t x{pixel["x"].as<uint8_t>()};
+                const uint8_t y{pixel["y"].as<uint8_t>()};
+                if (x < GRID_COLUMNS && y < GRID_ROWS)
+                {
+                    frame[x + y * GRID_COLUMNS] = pixel["brightness"].as<uint8_t>();
+                }
             }
         }
         render = true;

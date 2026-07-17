@@ -21,21 +21,21 @@ Frekvens replicates all original display modes while introducing a range of new 
 
 ### Key Highlights
 
-- **41 display modes**:
+- **33 display modes**:
   - Animations
   - Clocks
   - Interactive tools
   - Text scrolling
   - Streaming content
-  - Weather displays
-- **17 extensions**:
+  - Weather
+- **19 extensions**:
   - Web app
   - Smart-home integrations
   - Notifications
   - Accessories
   - API interfaces
   - Miscellaneous
-- **7 fonts**
+- **8 fonts**
 - Extensive [documentation](https://github.com/VIPnytt/Frekvens/wiki)
 
 ## ⚙️ Hardware
@@ -84,10 +84,6 @@ Each display model has its own hardware setup guide:
   `https://github.com/vipnytt/frekvens.git`
 
 - **From the Releases page** – If you prefer a direct download, grab a `zip` or `tar.gz` archive from the [releases page](https://github.com/vipnytt/frekvens/releases/latest).
-
-### Dependencies
-
-To enable the Web UI, [Node.js](https://nodejs.org/en/download) is required. The latest *LTS* version is recommended, but any newer version will work.
 
 ### PlatformIO
 
@@ -157,7 +153,7 @@ Define the Wi-Fi credentials in [`secrets.h`](https://github.com/VIPnytt/Frekven
 
 ### Weather
 
-Coordinates are required for most weather services:
+Coordinates are needed for most weather services:
 
 ```h
 #define LATITUDE "0.000"
@@ -214,14 +210,21 @@ Hold any button during startup to activate the Wi-Fi hotspot. Connect to it with
 
 ### Build fails
 
-If the build fails due to memory limits, try disabling features you don’t plan to use in the [`.env`](https://github.com/VIPnytt/Frekvens/blob/main/.env). The [OTA](https://github.com/VIPnytt/Frekvens/wiki/Extensions#%EF%B8%8F-ota) extension is by far the largest one, and therefore a good first candidate to remove in order to free up memory for other features.
+If the build fails due to size limits, try disabling features you don’t plan to use in the [`.env`](https://github.com/VIPnytt/Frekvens/blob/main/.env). OTA support requires space for two firmware images, so disabling OTA is often the most effective option on 4 MB boards.
 
 ### Where is the web UI?
 
-First, ensure that the Web app has been uploaded to the device using the *Upload Filesystem Image* option in PlatformIO. Then enter `frekvens.local` or your custom `HOSTNAME.local` in the browser. If this isn’t working, use the IP address instead.
+First, ensure that the Web app has been uploaded to the device using the *Upload Filesystem Image* option in PlatformIO. Then open `frekvens.local`, `obegransad.local`, or your custom `HOSTNAME.local` in a browser. If the page does not open, make sure the device has connected to Wi-Fi. If you know its IP address, try that instead.
 
-### Unexpected Reboots
+### Power supply
 
-If the device is rebooting unexpectedly, this is often a symptom of a software or hardware issue. The ESP32’s USB port is suitable for flashing and testing, but it is not designed to supply the high current levels that a display might draw during continuous operation.
+Use the correct power source during normal operation.
 
-If terminal logs include error messages, please [report an issue](https://github.com/VIPnytt/Frekvens/issues).
+- **IKEA Frekvens**: Use the integrated **4 V / 1.5 A** power supply during normal operation. The ESP32’s USB port should only be used for short setup tasks, such as uploading firmware or checking terminal logs. Otherwise, the display may not function properly.
+- **IKEA Obegränsad**: Use a USB power supply rated for at least **5 V / 2 A**, together with the original USB-A cable. The ESP32’s USB port can be used for uploading firmware and short-term testing, but it is usually not rated to handle the full current the display may draw at maximum brightness.
+
+### Unexpected reboots
+
+If the device is rebooting unexpectedly, this is often a symptom of a software or hardware issue.
+
+First, check that the correct power source is being used. If the device still reboots unexpectedly, check the terminal logs. If the logs include error messages, please [report an issue](https://github.com/VIPnytt/Frekvens/issues).

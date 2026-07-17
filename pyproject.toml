@@ -1,0 +1,72 @@
+[project]
+name = "frekvens"
+description = "Toolbox for the Frekvens project."
+version = "2.5.2.dev0"
+readme = { file = "README.md", content-type = "text/markdown" }
+license = "MIT"
+classifiers = [
+    "Private :: Do Not Upload",
+]
+requires-python = ">=3.10"
+dependencies = [
+    'httpx==0.28.1',
+]
+
+[project.urls]
+Homepage = "https://github.com/VIPnytt/Frekvens"
+Documentation = "https://github.com/VIPnytt/Frekvens/wiki"
+
+[project.optional-dependencies]
+font = [
+    "fonttools==4.63.0",
+    "matplotlib==3.10.9",
+    "pillow==12.3.0",
+]
+
+[build-system]
+requires = [
+    "setuptools",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = [
+    "tools/src",
+]
+
+[dependency-groups]
+dev = [
+    { include-group = "nodejs" },
+    { include-group = "ruff" },
+]
+nodejs = [
+    "nodejs-wheel==24.16.0",
+]
+packaging = [
+    "packaging==26.2",
+]
+platformio = [
+    "platformio==6.1.19",
+]
+ruff = [
+    "ruff==0.15.20",
+]
+scons = [
+    "scons==4.10.1",
+]
+scripts = [
+    { include-group = "nodejs" },
+    { include-group = "packaging" },
+    "python-dotenv==1.2.2",
+    "tzdata==2026.2",
+    "tzlocal==5.4.4",
+]
+uv = [
+    "uv==0.11.26",
+]
+
+[tool.ruff]
+extend-exclude = [
+    ".pio",
+]
+line-length = 120

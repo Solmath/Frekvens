@@ -2,47 +2,52 @@
 
 #include "modes/AnimationMode.h"
 
-#include "extensions/MicrophoneExtension.h" // NOLINT(misc-include-cleaner)
 #include "services/DeviceService.h"
 #include "services/DisplayService.h"
+#include "services/ExtensionsService.h" // NOLINT(misc-include-cleaner)
 
-#include <Preferences.h>
 #include <array>
+#include <nvs.h>
 
 void AnimationMode::begin()
 {
-    index = 0;
+    index = 0U;
     pending = true;
 }
 
 void AnimationMode::handle()
 {
 #if EXTENSION_MICROPHONE
-    if (millis() - lastMillis >= interval && Microphone->isTriggered())
+    if (millis() - lastMillis >= interval && Extensions.Microphone().isTriggered())
 #else
     if (millis() - lastMillis >= interval)
 #endif // EXTENSION_MICROPHONE
     {
-        Preferences Storage;
-        Storage.begin(name, true);
-        if (Storage.isKey(std::to_string(index).c_str()))
+        nvs_handle_t handle{};
+        if (nvs_open(name.data(), nvs_open_mode_t::NVS_READONLY, &handle) == ESP_OK)
         {
-            lastMillis = millis();
             std::array<uint8_t, GRID_COLUMNS * GRID_ROWS> frame{};
-            Storage.getBytes(std::to_string(index).c_str(), frame.data(), frame.size());
-            Storage.end();
-            Display.setFrame(frame);
-            if (pending)
+            size_t length{frame.size()}; // NOLINT(cppcoreguidelines-init-variables)
+            if (nvs_get_blob(handle, std::to_string(index).c_str(), frame.data(), &length) == ESP_OK)
             {
-                transmit(index, frame);
+                lastMillis = millis();
+                Display.setFrame(frame);
+                if (pending)
+                {
+                    transmit(index, frame);
+                }
+                ++index;
             }
-            ++index;
-        }
-        else
-        {
-            Storage.end();
-            index = 0;
-            pending = false;
+            else if (index == 0U)
+            {
+                lastMillis = millis() + UINT16_MAX;
+            }
+            else
+            {
+                index = 0U;
+                pending = false;
+            }
+            nvs_close(handle);
         }
     }
 }
@@ -50,41 +55,46 @@ void AnimationMode::handle()
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void AnimationMode::setFrame(uint8_t _index, std::span<const uint8_t> frame)
 {
-    lastMillis = millis() + (frame.size() * 2);
-    Preferences Storage;
-    Storage.begin(name);
-    Storage.putBytes(std::to_string(_index).c_str(), frame.data(), frame.size());
-    Storage.end();
-    this->index = 0;
+    lastMillis = millis() + (frame.size() * 2U);
+    nvs_handle_t handle{};
+    if (nvs_open(name.data(), nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
+    {
+        nvs_set_blob(handle, std::to_string(_index).c_str(), frame.data(), frame.size());
+        nvs_commit(handle);
+        nvs_close(handle);
+    }
+    index = 0U;
     pending = true;
-    ESP_LOGV(name, "frame #%d saved", _index + 1); // NOLINT(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
+    ESP_LOGV(name.data(), "frame #%u saved", _index + 1U); // NOLINT(cppcoreguidelines-pro-type-vararg,hicpp-vararg)
 }
 
 void AnimationMode::setFrames(uint8_t count)
 {
-    Preferences Storage;
-    Storage.begin(name);
-    for (uint8_t i = count; i >= 2; ++i)
+    nvs_handle_t handle{};
+    if (nvs_open(name.data(), nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
     {
-        const std::string key = std::to_string(i);
-        if (!Storage.isKey(key.c_str()))
+        for (uint8_t i{count}; i >= 2U; ++i)
         {
-            break;
+            if (nvs_find_key(handle, std::to_string(i).c_str(), nullptr) != ESP_OK ||
+                nvs_erase_key(handle, std::to_string(i).c_str()) != ESP_OK)
+            {
+                break;
+            }
         }
-        Storage.remove(key.c_str());
+        nvs_commit(handle);
+        nvs_close(handle);
     }
-    Storage.end();
 }
 
 void AnimationMode::setInterval(uint16_t _interval)
 {
-    if (_interval != interval)
+    interval = _interval;
+    nvs_handle_t handle{};
+    if (nvs_open(std::string(name).c_str(), nvs_open_mode_t::NVS_READWRITE, &handle) == ESP_OK)
     {
-        interval = _interval;
-        Preferences Storage;
-        Storage.begin(name);
-        Storage.putUShort("interval", interval);
-        Storage.end();
+        nvs_set_u16(handle, "interval", interval);
+        nvs_commit(handle);
+        nvs_close(handle);
     }
 }
 
@@ -93,7 +103,7 @@ void AnimationMode::transmit(uint8_t index, std::span<const uint8_t> frame)
     JsonDocument doc; // NOLINT(misc-const-correctness)
     doc["interval"].set(interval);
     JsonArray _frame{doc["frame"].to<JsonArray>()};
-    for (uint16_t i = 0; i < frame.size(); ++i)
+    for (size_t i{0U}; i < frame.size(); ++i)
     {
         _frame.add(frame[i]);
     }
@@ -102,13 +112,13 @@ void AnimationMode::transmit(uint8_t index, std::span<const uint8_t> frame)
 }
 
 void AnimationMode::onReceive(JsonObjectConst payload,
-                              const char *source) // NOLINT(misc-unused-parameters)
+                              std::string_view source) // NOLINT(misc-unused-parameters)
 {
-    // Action: pull
-    if (payload["action"].is<const char *>() && !strcmp(payload["action"].as<const char *>(), "pull"))
+    // Action: Pull
+    if (payload["action"].is<std::string_view>() && payload["action"].as<std::string_view>() == "pull")
     {
         lastMillis = millis() + (GRID_COLUMNS * GRID_ROWS);
-        index = 0;
+        index = 0U;
         pending = true;
     }
     // Frame
@@ -116,8 +126,8 @@ void AnimationMode::onReceive(JsonObjectConst payload,
         payload["index"].is<uint8_t>())
     {
         std::array<uint8_t, GRID_COLUMNS * GRID_ROWS> frame{};
-        const JsonArrayConst _frame = payload["frame"].as<JsonArrayConst>();
-        for (size_t i = 0; i < frame.size(); ++i)
+        const JsonArrayConst &_frame{payload["frame"].as<JsonArrayConst>()};
+        for (size_t i{0U}; i < frame.size(); ++i)
         {
             if (_frame[i].is<uint8_t>())
             {

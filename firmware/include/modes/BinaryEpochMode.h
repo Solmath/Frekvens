@@ -7,10 +7,12 @@
 class BinaryEpochMode final : public ModeModule
 {
 private:
-    time_t epoch = 0;
+    time_t epoch{0LL};
 
 public:
-    explicit BinaryEpochMode() : ModeModule("Binary epoch") {};
+    static constexpr std::string_view name{"Binary epoch"};
+
+    explicit BinaryEpochMode() : ModeModule(name) {};
 
     void handle() override;
 };
